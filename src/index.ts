@@ -123,12 +123,13 @@ function init(userConfig?: AcornAccessConfig): void {
       setProfile(name: string | null) {
         if (!store) return;
         if (name === null) {
-          store.setState({ profile: null });
           store.reset();
           return;
         }
         const profileDef = config.profiles[name];
         if (profileDef) {
+          // Reset to defaults first to prevent features from previous profile leaking
+          store.reset();
           store.setState({ ...profileDef.settings, profile: name });
           dispatchEvent('acorn.access:profile-change', { profile: name });
         }

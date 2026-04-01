@@ -16,6 +16,7 @@ export function createOverlayManager(zIndex: number): OverlayManager {
     if (!container) {
       container = document.createElement('div');
       container.id = aaId('overlays');
+      container.setAttribute('data-aa-skip', 'all');
       container.style.cssText = `
         position: fixed;
         top: 0;

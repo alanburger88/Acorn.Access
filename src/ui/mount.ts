@@ -16,6 +16,7 @@ export function createWidgetMount(config: ResolvedConfig): WidgetMount {
   // Minimal inline styles — no position/filter/transform to avoid
   // creating a containing block that breaks fixed positioning in shadow DOM
   host.style.cssText = 'display:contents; pointer-events:none;';
+  host.setAttribute('data-aa-skip', 'all');
 
   const shadow = host.attachShadow({ mode: 'open' });
 

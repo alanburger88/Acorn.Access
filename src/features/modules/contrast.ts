@@ -2,6 +2,9 @@ import type { FeatureModule } from '../types';
 import type { FeatureState } from '../../config/types';
 import { setDataAttr, removeDataAttr } from '../../utils/css';
 
+const SKIP = ':not([data-aa-skip~="contrast"]):not([data-aa-skip="all"])';
+const SKIP_MEDIA = `${SKIP}:not(img):not(video):not(canvas):not(svg):not(picture)`;
+
 export function createContrastModule(): FeatureModule {
   return {
     key: 'contrast',
@@ -11,28 +14,24 @@ export function createContrastModule(): FeatureModule {
       switch (state.contrast) {
         case 'dark':
           return `
-            html[data-aa-contrast="dark"] {
-              background-color: #1a1a2e !important;
-              color: #e0e0e0 !important;
-            }
             html[data-aa-contrast="dark"] body {
               background-color: #1a1a2e !important;
               color: #e0e0e0 !important;
             }
-            html[data-aa-contrast="dark"] *:not([data-aa-skip~="contrast"]):not(img):not(video):not(canvas):not(svg):not(picture) {
+            html[data-aa-contrast="dark"] body *${SKIP_MEDIA} {
               background-color: inherit !important;
               color: inherit !important;
               border-color: #444 !important;
             }
-            html[data-aa-contrast="dark"] a:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="dark"] body a${SKIP} {
               color: #6eb5ff !important;
             }
-            html[data-aa-contrast="dark"] a:visited:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="dark"] body a:visited${SKIP} {
               color: #c9a0ff !important;
             }
-            html[data-aa-contrast="dark"] input:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="dark"] textarea:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="dark"] select:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="dark"] body input${SKIP},
+            html[data-aa-contrast="dark"] body textarea${SKIP},
+            html[data-aa-contrast="dark"] body select${SKIP} {
               background-color: #2a2a3e !important;
               color: #e0e0e0 !important;
               border-color: #555 !important;
@@ -40,19 +39,15 @@ export function createContrastModule(): FeatureModule {
           `;
         case 'light':
           return `
-            html[data-aa-contrast="light"] {
-              background-color: #ffffff !important;
-              color: #111111 !important;
-            }
             html[data-aa-contrast="light"] body {
               background-color: #ffffff !important;
               color: #111111 !important;
             }
-            html[data-aa-contrast="light"] *:not([data-aa-skip~="contrast"]):not(img):not(video):not(canvas):not(svg):not(picture) {
+            html[data-aa-contrast="light"] body *${SKIP_MEDIA} {
               background-color: inherit !important;
               color: inherit !important;
             }
-            html[data-aa-contrast="light"] a:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="light"] body a${SKIP} {
               color: #0000cc !important;
             }
           `;
@@ -61,49 +56,45 @@ export function createContrastModule(): FeatureModule {
             html[data-aa-contrast="invert"] body {
               filter: invert(1) hue-rotate(180deg) !important;
             }
-            html[data-aa-contrast="invert"] body img:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="invert"] body video:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="invert"] body canvas:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="invert"] body picture:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="invert"] body svg:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="invert"] body [style*="background-image"]:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="invert"] body img${SKIP},
+            html[data-aa-contrast="invert"] body video${SKIP},
+            html[data-aa-contrast="invert"] body canvas${SKIP},
+            html[data-aa-contrast="invert"] body picture${SKIP},
+            html[data-aa-contrast="invert"] body svg${SKIP},
+            html[data-aa-contrast="invert"] body [style*="background-image"]${SKIP} {
               filter: invert(1) hue-rotate(180deg) !important;
             }
           `;
         case 'high':
           return `
-            html[data-aa-contrast="high"] {
-              background-color: #000000 !important;
-              color: #ffffff !important;
-            }
             html[data-aa-contrast="high"] body {
               background-color: #000000 !important;
               color: #ffffff !important;
             }
-            html[data-aa-contrast="high"] *:not([data-aa-skip~="contrast"]):not(img):not(video):not(canvas):not(svg):not(picture) {
+            html[data-aa-contrast="high"] body *${SKIP_MEDIA} {
               background-color: inherit !important;
               color: inherit !important;
               border-color: #ffffff !important;
             }
-            html[data-aa-contrast="high"] a:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="high"] body a${SKIP} {
               color: #ffff00 !important;
               text-decoration: underline !important;
             }
-            html[data-aa-contrast="high"] a:visited:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="high"] body a:visited${SKIP} {
               color: #ff80ff !important;
             }
-            html[data-aa-contrast="high"] button:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="high"] [role="button"]:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="high"] body button${SKIP},
+            html[data-aa-contrast="high"] body [role="button"]${SKIP} {
               border: 2px solid #ffffff !important;
             }
-            html[data-aa-contrast="high"] input:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="high"] textarea:not([data-aa-skip~="contrast"]),
-            html[data-aa-contrast="high"] select:not([data-aa-skip~="contrast"]) {
+            html[data-aa-contrast="high"] body input${SKIP},
+            html[data-aa-contrast="high"] body textarea${SKIP},
+            html[data-aa-contrast="high"] body select${SKIP} {
               background-color: #1a1a1a !important;
               color: #ffffff !important;
               border: 2px solid #ffffff !important;
             }
-            html[data-aa-contrast="high"] *:focus-visible {
+            html[data-aa-contrast="high"] body *:focus-visible {
               outline: 3px solid #ffff00 !important;
               outline-offset: 2px !important;
             }

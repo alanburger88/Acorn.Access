@@ -98,11 +98,14 @@ export function createPanel(
       if (!profileKey) return;
       const currentState = store.getState();
       if (currentState.profile === profileKey) {
-        store.setState({ profile: null });
+        // Deactivate current profile — reset everything
         store.reset();
       } else {
         const profileDef = config.profiles[profileKey];
         if (profileDef) {
+          // Reset to defaults first, then apply new profile
+          // This prevents features from a previous profile leaking through
+          store.reset();
           store.setState({ ...profileDef.settings, profile: profileKey });
         }
       }
