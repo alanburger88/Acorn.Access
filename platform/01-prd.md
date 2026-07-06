@@ -38,11 +38,41 @@
 - **INV-4:** Publication gates (approval FR-CMS-020, accessibility FR-ACC-010, compliance FR-AI-060) are enforced in the pipeline; they cannot be bypassed via API.
 - **INV-5:** Every template declares an intended outcome and success criteria before publication (FR-TPL-001).
 
+### 1.4 Intended-outcome taxonomy (normative)
+
+Every template declares exactly one primary intended outcome (FR-TPL-001). Default success criteria are tenant-overridable per template.
+
+| Outcome | Definition | Default success event | Default window |
+|---|---|---|---|
+| `understood` | Recipient comprehended the communication | Interactive open + ≥ 60% scroll depth OR assistant session resolved without escalation; AND no related inbound call | 14 days |
+| `paid` | Payment obligation settled | Payment completed (in-viewer or reconciled external payment) | 7 days from first access |
+| `renewed` | Policy/contract/subscription continued | Renewal transaction confirmed by tenant system event | 30 days |
+| `disputed` | Recipient exercised dispute/appeal rights (where that is the desired action) | Structured dispute submitted with case ID | 30 days |
+| `signed` | Legally required signature captured | E-signature completion event | 14 days |
+| `self_served` | Recipient completed the intended task without human help | Target action completed with no escalation event | Session + 7 days |
+| `call_avoided` | Communication resolved the matter without contact-center demand | No call tagged to the communication in the attribution window | 14 days |
+| `converted` | Recipient adopted the promoted option (paperless, autopay, plan) | Enrollment event | 30 days |
+| `informed_no_action` | Regulatory notice; no action desired | Proof of delivery (+ proof of access where channel allows) | Delivery + access window |
+
+Secondary outcomes may be tracked additively; attribution methodology (windows, holdouts) is published to tenants per template (see Vision §13, attribution risk).
+
+### 1.5 Persona-to-domain traceability
+
+| Persona | Primary domains | Representative requirements |
+|---|---|---|
+| Business user | CMS, Designer, Analytics | FR-TPL-008, FR-CMS-005, FR-ANL-030 |
+| Template designer | Designer, Rendering, Accessibility, I18N | FR-TPL-002..022, FR-ACC-010, FR-I18N-003 |
+| Developer | Ingestion, Integration, White-label, NFR | FR-ING-012, FR-WLB-004, NFR-007/008 |
+| Compliance officer | CMS, AI governance, Archive, Accessibility | FR-CMS-004/012, FR-AI-060/100, FR-ARC-003 |
+| Operations | Rendering, Delivery, NFR | FR-RND-020, FR-DLV-040, NFR-001..008 |
+| Executive | Analytics | FR-ANL-030, FR-ANL-015-class reporting |
+| End customer | Interactive Experience, Delivery, Accessibility | FR-IXD-*, FR-DLV-010/030, FR-ACC-020 |
+
 ---
 
 ## 2. Data ingestion (FR-ING)
 
-The ingestion subsystem accepts enterprise data in any common format, produces validated, typed, privacy-annotated communication data sets, and resolves identity.
+The ingestion subsystem accepts enterprise data in any common format, produces validated, typed, privacy-annotated communication data sets, and resolves identity. Design intent: a tenant integration engineer onboards a new feed — mapping, validation, PII policy, identity rules — in days without platform engineering involvement; everything downstream (composition, orchestration, analytics, archive) consumes one canonical, annotated data model.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -60,6 +90,9 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 | FR-ING-031 | **Householding**: group identities into households by address + relationship rules for statement bundling and delivery consolidation; tenant-configurable rules. | P0 | ENT |
 | FR-ING-040 | **Address validation & standardization** via the modern USPS APIs platform (OAuth2 REST — the legacy USPS Web Tools API was shut down January 2026): CASS-certified standardization, DPV, NCOA move-update integration, and international address validation via pluggable providers (Loqate/Melissa-class). Provider abstraction layer; no direct coupling to a single vendor. | P0 | MVP: USPS REST validation; ENT: NCOA, international |
 | FR-ING-041 | Address quality outcomes recorded per identity (deliverable, vacant, undeliverable) and consumed by delivery orchestration (FR-DLV-050) for channel failover decisions. | P1 | ENT |
+| FR-ING-050 | **Data lineage**: every composed communication traces each rendered value to its source file/message, field, mapping version, and transformation chain; lineage queryable per communication for audit and defect analysis. | P0 | MVP |
+| FR-ING-051 | **Data contracts**: per-feed schema contracts with compatibility checking; breaking upstream changes are detected at intake and quarantine the feed (not silently mis-map) with tenant alerting. | P1 | MVP |
+| FR-ING-052 | Duplicate-submission protection: idempotency keys on API intake and content-hash dedup on file intake with configurable windows; duplicate batches are rejected with reference to the original run. | P0 | MVP |
 
 **AC-ING (P0 gate):**
 1. A 5 GB fixed-width file with copybook maps, validates, and lands as typed data with ≤ 0.01% unexplained record loss and a per-record disposition report.
@@ -70,6 +103,8 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 ---
 
 ## 3. Enterprise CMS for communications (FR-CMS)
+
+Design intent: the CMS is the single governed source of everything the enterprise says. A clause exists once; every channel projection, language variant, and template references it. Change control, effective dating, and impact analysis make a regulatory content change a same-week operation with automatic evidence — the direct answer to the "compose many times" failure of legacy CCM.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -83,6 +118,9 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 | FR-CMS-011 | **AI tagging & scoring** on save: auto-tags (topic, product, regulation), brand-compliance score against the tenant's brand guide, reading-level score (Flesch-Kincaid + model-based), sentiment score, and **regulatory-risk score** with cited rationale. Scores are advisory annotations; thresholds may be wired into approval gates per workspace. | P0 | MVP: tagging + reading level; ENT: full scoring gates |
 | FR-CMS-012 | Clause/disclosure libraries: jurisdiction-aware mandatory-content sets ("this communication type in state X must include clauses A, B") validated at template publication. | P0 | ENT |
 | FR-CMS-020 | Publication gate: no content object version is composable until approved; draft/approved/published/retired lifecycle enforced by the API, not the UI. | P0 | MVP |
+| FR-CMS-021 | Digital asset management: images, fonts, logos with usage-rights metadata, license expiry alerts, and automatic format/resolution derivatives per channel. | P1 | MVP |
+| FR-CMS-022 | Content calendar: dashboard of upcoming effective/expiry events across the workspace with owner alerts at configurable lead times. | P2 | ENT |
+| FR-CMS-023 | Workspace governance: content sharing policies between workspaces (share, copy-with-link-back, deny) with tenant-level mandatory objects (e.g., corporate legal footer) that workspaces cannot override. | P1 | ENT |
 
 **AC-CMS (P0 gate):**
 1. Editing a disclosure used by 40 templates surfaces all 40 in impact analysis before save; publishing the new version re-queues each impacted template for re-approval per workspace policy.
@@ -92,6 +130,8 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 ---
 
 ## 4. Template designer (FR-TPL)
+
+Design intent: one designer, every channel, two personas. Designers own structure, logic, and channel projections; business users edit designated content within guardrails. AI accelerates every step but never publishes anything. The designer is where the outcome contract is made: no intended outcome, no publication.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -108,6 +148,9 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 | FR-TPL-020 | **Embedded AI design assistant** (all actions draft-only, human accepts, logged per INV-3): (a) draft a template from a natural-language prompt + data schema; (b) **PDF-to-template conversion** — upload a legacy PDF/Word artifact, receive an editable template with detected regions, extracted content objects, and proposed data bindings; (c) readability improvement suggestions inline; (d) compliance flags citing the matched rule/clause; (e) alt-text generation for images/charts; (f) translation drafts (into FR-I18N workflow); (g) test-data generation. | P0 | MVP: a, b, c, e; ENT: d at depth, f/g integrated |
 | FR-TPL-021 | Template lifecycle: draft → in-review → approved → published → retired; publication produces an immutable template version consumed by rendering; retirement blocks new compositions but preserves reproducibility (FR-ARC-004). | P0 | MVP |
 | FR-TPL-022 | Template testing: regression rendering — render a candidate version against a pinned record corpus and produce a visual + data diff versus the published version before approval. | P1 | ENT |
+| FR-TPL-023 | Interactive-action authoring: place and configure viewer actions (payment card, dispute entry points, forms, signature blocks, walkthrough steps, assistant scope) directly in the canvas with per-action visibility rules. | P0 | MVP |
+| FR-TPL-024 | Template import/export as code: templates and components exportable as versioned, diff-able definitions for CI/CD promotion across environments (dev→staging→prod) with checksum verification. | P1 | MVP |
+| FR-TPL-025 | Design-time governance hints: inline surfacing of CMS scores (reading level, brand, regulatory-risk) and accessibility issues while editing, so gate failures are fixed before review, not after. | P1 | MVP |
 
 **AC-TPL (P0 gate):**
 1. Attempting to publish a template without an intended outcome returns a blocking validation error in UI and API.
@@ -118,6 +161,8 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 ---
 
 ## 5. Rendering & output management (FR-RND)
+
+Design intent: one composition engine, deterministic and versioned, serving both a 2M-record overnight batch and a 200 ms API call — because outcome measurement and reproducibility both require that "the same communication" means the same bytes regardless of how it was produced.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -131,6 +176,9 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 | FR-RND-013 | **Postal optimization**: presort (USPS Full-Service Intelligent Mail), commingling handoff files, address-quality-driven suppression, postage accounting reports; equivalent handoffs for PSP downstream sortation. | P0 | ENT |
 | FR-RND-020 | Batch operations: job control (submit, pause, resume, cancel, restart from checkpoint), record-level error isolation (bad record quarantines without failing the run), reprocessing of quarantined subsets, dual-run reconciliation totals (records in = rendered + quarantined + suppressed, with reasons). | P0 | MVP |
 | FR-RND-021 | Rendering audit: every artifact records template version, content object versions, data snapshot hash, engine version, and gate results — the reproducibility tuple consumed by FR-ARC-004. | P0 | MVP |
+| FR-RND-022 | Proof and draft output: watermarked proof renditions for approval workflows and seed-list sends, excluded from archive-of-record and analytics by construction. | P0 | MVP |
+| FR-RND-023 | Attachment handling: merge tenant-supplied PDFs (e.g., regulatory inserts produced elsewhere) into packages with validation (PDF version, tagging status) and inclusion recorded in the reproducibility tuple. | P1 | ENT |
+| FR-RND-024 | Output optimization: PDF linearization, image downsampling profiles per channel, font subsetting; interactive bundle size budget enforced (NFR-006). | P1 | MVP |
 
 **AC-RND (P0 gate):**
 1. A 2M-record statement batch completes within the tenant SLA window; killing a worker node mid-run loses zero records (checkpoint restart); reconciliation totals balance exactly.
@@ -140,6 +188,8 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 ---
 
 ## 6. Omnichannel delivery & orchestration (FR-DLV)
+
+Design intent: one orchestration brain owns the customer's communication relationship. Preferences, consent, caps, and quiet hours are enforced in one place for every channel — a send that violates them is structurally impossible, not procedurally discouraged. Failover ladders guarantee regulated communications always arrive somewhere provable.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -155,6 +205,9 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 | FR-DLV-031 | Expired-link behavior: expired or exhausted links render a safe re-request page (re-authenticate → fresh link), never the communication; all access attempts logged for proof-of-access (FR-ARC-003). | P0 | MVP |
 | FR-DLV-040 | **Reconciliation**: end-to-end ledger per communication — composed → dispatched → provider-accepted → delivered/bounced → accessed; daily reconciliation reports; discrepancies (dispatched but no provider ack, printed but no induction scan) alarmed within a configurable window. | P0 | MVP: digital; ENT: print induction scans (IMb tracing) |
 | FR-DLV-050 | **Cost optimization**: per-channel cost models; orchestration policies may optimize channel choice within preference/consent/regulatory constraints (never overriding them); paperless-conversion nudge campaigns as a built-in journey pattern; cost-per-outcome reporting to FR-ANL. | P1 | ENT |
+| FR-DLV-051 | Blackout calendars: tenant-defined no-send dates (holidays, regulatory blackout periods, incident freezes) per channel and category, with deferral queues and regulatory-communication exemption rules. | P1 | MVP |
+| FR-DLV-052 | Seed lists & proofing sends: watermarked proof deliveries (FR-RND-022) to internal seed addresses per channel before batch release, with hold-and-release job control. | P0 | MVP |
+| FR-DLV-053 | Suppression list management: tenant-managed and regulatory suppression lists (litigation, deceased, fraud) checked at orchestration with the same hard-block semantics as FR-DLV-011. | P0 | MVP |
 
 **AC-DLV (P0 gate):**
 1. A send violating a DNC entry is blocked at orchestration with a recorded reason; the block appears in the reconciliation ledger and the journey run log; no provider API call is made.
@@ -166,7 +219,7 @@ The ingestion subsystem accepts enterprise data in any common format, produces v
 
 ## 7. Interactive document experience (FR-IXD)
 
-The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this repository) is embedded as the viewer's accessibility layer** — see FR-ACC-020.
+The interactive viewer is the IXM pillar's runtime and the platform's outcome engine: the place where "understood, paid, disputed, signed, self-served" actually happens. Design intent: the communication is a destination that explains itself, answers honestly, and closes the loop in place. **Acorn.Access (this repository) is embedded as the viewer's accessibility layer** — see FR-ACC-020.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -184,6 +237,9 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-IXD-027 | **E-signature**: embedded signing (native simple e-sign with intent capture + tamper-evident seal, and DocuSign/Adobe-class provider integration) with the signed artifact archived as a statement of record. | P0 | MVP: provider integration; ENT: native e-sign |
 | FR-IXD-030 | **Escalation & handoff**: one-tap escalation to chat, callback scheduling, or voice — passing full context (communication ID, viewed sections, assistant transcript) to the agent desktop so the recipient never repeats themselves; deflection vs. escalation events feed outcome analytics. | P0 | MVP: context-carrying chat/phone handoff; ENT: agent-desktop embed |
 | FR-IXD-031 | PDF download, print-friendly view, and share-to-authorized-party (POA/caregiver with consent record) from the viewer. | P1 | MVP: download/print; ENT: authorized sharing |
+| FR-IXD-032 | Viewer theming: full brand-token theming (FR-TPL-007) including recipient dark-mode support and tenant CSP/domain configuration for embedded contexts (FR-WLB-003). | P0 | MVP |
+| FR-IXD-033 | Viewer event API: every interaction emitted to the event fabric (FR-ANL-001) and, for embedded deployments, surfaced to the host page via postMessage with a documented contract. | P0 | MVP |
+| FR-IXD-034 | Session security: viewer sessions time out per sensitivity tier; step-up policies per action (FR-DLV-030); all session and action events feed proof-of-access (FR-ARC-003). | P0 | MVP |
 
 **AC-IXD (P0 gate):**
 1. Red-team suite: the assistant, prompted with 500 adversarial questions (out-of-scope, cross-customer, jailbreak, regulated-advice), produces zero answers sourced outside its grounding set and zero uncited factual claims; 100% of regulated-category questions receive the cannot-answer + escalation response.
@@ -194,6 +250,8 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 ---
 
 ## 8. AI everywhere & AI governance (FR-AI)
+
+Design intent: AI is a governed subsystem, not a feature sprinkle. Every AI capability in the platform is an entry in one catalog with a declared grounding policy, gate class, and audit surface — so a compliance officer can answer "where does AI touch our communications, with which models, under whose approval" from one dashboard.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -210,6 +268,9 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-AI-080 | **Knowledge graph**: entity graph across content objects, templates, regulations, products, and outcomes powering impact analysis, semantic search, and assistant grounding scope resolution. | P2 | ENT |
 | FR-AI-090 | **Test & synthetic data generation**: schema-aware synthetic record generation (edge cases, locale variants, boundary values) with a guarantee of no real-customer data leakage (generated from schema + distributions, never from raw records without differential safeguards). | P1 | MVP |
 | FR-AI-100 | **AI governance dashboard**: per-tenant view of AI usage by service, model, gate outcomes, confidence distributions, hallucination incidents, override rates, and cost; exportable for model-risk-management (SR 11-7-style) documentation. | P0 | MVP: usage + incidents; ENT: full MRM pack |
+| FR-AI-110 | **Evaluation harness**: per-service golden datasets and scoring pipelines; model or prompt changes require a passing eval run (quality + safety suites) before promotion to any tenant; eval results retained as release evidence. | P0 | MVP |
+| FR-AI-111 | **Red-team suite as release gate**: adversarial test corpus (grounding escapes, cross-tenant probes, jailbreaks, regulated-advice traps) executed on every assistant-affecting release; any grounding escape blocks the release. | P0 | MVP |
+| FR-AI-112 | AI incident management: hallucination or grounding incidents open cases with severity, affected communications, tenant notification rules, and post-incident eval additions — the corpus grows from every failure. | P0 | MVP |
 
 **AC-AI (P0 gate):**
 1. A tenant admin switches the assistant's model to their Azure-hosted deployment; subsequent inference calls route there exclusively (verified by egress logs); platform-hosted fallback occurs only if the tenant enabled it.
@@ -236,6 +297,8 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 
 ## 10. Analytics (FR-ANL)
 
+Design intent: analytics exists to answer one question — did the communication achieve its declared outcome, and if not, why — and to route the answer back into content, templates, journeys, and NBA. Volume and SLA metrics are operational context, never the headline.
+
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
 | FR-ANL-001 | **Event fabric**: every delivery event (dispatched, delivered, bounced, printed, inducted) and interaction (open, dwell, scroll depth, section expand, tooltip, search query, FAQ view, assistant Q&A, action start/complete/abandon, download, escalation) captured as first-class events with communication, template-version, journey, and identity keys; streaming to tenant destinations (webhook, Kafka, warehouse share). | P0 | MVP |
@@ -248,12 +311,16 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-ANL-040 | Anomaly detection: automatic alerting on deviations (bounce spikes, engagement collapse after a template change, assistant escalation surge) with AI-generated narrative diagnosis (advisory class). | P1 | ENT |
 | FR-ANL-041 | Analytics narration: natural-language summaries of any dashboard ("what changed this week and why") with figures cited to the underlying queries. | P2 | ENT |
 | FR-ANL-050 | Privacy: interaction analytics honor consent and regional rules (e.g., no open-tracking where prohibited); identity-level analytics permissioned; aggregate views k-anonymity-thresholded. | P0 | MVP |
+| FR-ANL-051 | BI export: governed datasets shared to tenant warehouses (Snowflake/BigQuery/Databricks shares) and generic query API, honoring the same masking and permission model as the UI. | P1 | ENT |
+| FR-ANL-052 | Executive scorecards: portfolio-level rollups (OAR by outcome class, digital adoption, deflection, cost per outcome) with period comparison and target tracking. | P1 | MVP |
 
 **AC-ANL (P0 gate):** For a published template, the outcome dashboard shows attainment rate computed from real events within the declared window; a payment in the viewer appears in the funnel, the timeline, and OAR within 5 minutes; a tenant user without identity-level permission sees only aggregates.
 
 ---
 
 ## 11. Archive & statement of record (FR-ARC)
+
+Design intent: the archive is not storage; it is the enterprise's ability to prove — content, delivery, access, approval, AI involvement, and version rationale — for every communication, for its full legal life, reproducibly. It is also a wedge: evidence packs in minutes are a capability incumbents structurally lack.
 
 | ID | Requirement | Priority | Release |
 |---|---|---|---|
@@ -264,6 +331,7 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-ARC-005 | **eDiscovery**: search across the archive by identity, date, template, content text, and metadata; export with chain-of-custody manifest; reviewer workspaces with access logging. | P0 | MVP: search/export; ENT: reviewer workspaces |
 | FR-ARC-006 | Archive access channels: recipient self-service history in the portal/viewer, agent lookup, bulk API, and batch export for downstream archival systems; all access logged. | P0 | MVP |
 | FR-ARC-007 | Migration-in: bulk import of legacy archives (PDF/AFP + index files) with metadata mapping so tenants can decommission legacy repositories. | P1 | ENT |
+| FR-ARC-008 | Key longevity: encryption keys and their custody records retained and rotatable for the full retention period without re-encrypting WORM content (envelope encryption); key destruction is itself an audited disposition event. | P0 | MVP |
 
 **AC-ARC (P0 gate):** An evidence pack for a 13-month-old communication assembles in under 15 minutes and includes all six proofs; attempting to modify or delete a record under WORM/hold fails at the storage layer (not just the app layer); re-materialization of that communication hash-matches the archived artifact.
 
@@ -297,6 +365,11 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-SEC-006 | Privacy operations: DSAR support (locate/export/delete per identity within legal constraints — archive records under retention are exempt-but-reported), data-residency controls per tenant region, processing records. | P0 | MVP: DSAR + residency selection; ENT: multi-region residency |
 | FR-SEC-007 | Application security: secrets management, dependency and container scanning in CI, pen tests per release, vulnerability SLA (critical ≤ 7 days), signed artifacts, SBOM per release. | P0 | MVP |
 
+**AC-SEC (P0 gate):**
+1. A cross-tenant access attempt via any API (crafted IDs, shared-resource probing) returns not-found semantics and raises a security event; the isolation test suite runs in CI on every release.
+2. A user granted a workspace role in workspace A has zero visibility into workspace B objects in UI, API, search, and analytics.
+3. Every admin action requiring step-up MFA fails closed when the second factor is unavailable; the failure is audit-logged.
+
 ---
 
 ## 14. Multilingual (FR-I18N)
@@ -310,6 +383,11 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-I18N-005 | **Multilingual accessibility**: accessibility gates (FR-ACC-010) run per language variant — lang attributes, correct screen-reader language switching, reading-order validation for RTL; evidence packs per language. | P0 | MVP: lang tagging; ENT: per-variant packs |
 | FR-I18N-006 | Language selection: recipient language preference in the preference center; fallback chains (es-MX → es → source) with mandatory-content parity checks — a missing regulated clause in a variant blocks that variant, not silently falls back. | P0 | MVP |
 
+**AC-I18N (P0 gate):**
+1. A recipient with language preference `es` receives the approved Spanish variant across email, viewer, and PDF; a template whose Spanish variant lacks an approved mandatory clause fails composition for that recipient with a specific error, never falling back silently to English for the regulated clause.
+2. An Arabic variant renders correct RTL layout in the viewer and PDF/UA output, with `lang`/`dir` attributes verified by the accessibility gate.
+3. Updating a source clause marks all language variants stale on the coverage dashboard within one minute.
+
 ---
 
 ## 15. Migration (FR-MIG)
@@ -322,6 +400,10 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-MIG-004 | Migration factory operations: portfolio inventory (dedup analysis across legacy templates — typically 40–70% consolidation), batch conversion queues, throughput dashboards, per-template status tracking. | P1 | ENT |
 | FR-MIG-005 | Archive migration-in per FR-ARC-007. | P1 | ENT |
 
+**AC-MIG (ENT gate):**
+1. On the incumbent-converter benchmark portfolio (100 templates per source format), ≥ 70% of templates convert to approved state with ≤ 2 hours human fix-up each; every converted template carries a conversion confidence report.
+2. Migration validation renders legacy and Acorn output over a 10k-record corpus and produces a per-template visual/text/semantic diff report; sign-off is blocked while unreviewed differences remain.
+
 ---
 
 ## 16. White-label / OEM (FR-WLB)
@@ -333,6 +415,11 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | FR-WLB-003 | **Embeddable widgets**: viewer, preference center, payment card, and assistant embeddable via web components/iframe with postMessage APIs and CSP-compatible packaging. | P0 | MVP: viewer embed; ENT: full set |
 | FR-WLB-004 | **Headless APIs**: every capability (ingest, compose, render, deliver, archive query, analytics events) available API-first with OpenAPI specs, SDKs (TypeScript, Java, Python, C#), webhooks, and sandbox tenants. | P0 | MVP |
 | FR-WLB-005 | **Usage & revenue reporting**: metered usage per sub-tenant (communications, renditions, channels, AI calls, storage), partner-facing billing exports, and revenue-share reporting. | P0 | ENT |
+
+**AC-WLB:**
+1. A partner-provisioned sub-tenant inherits the partner's default configuration, can override permitted settings only, and has zero data visibility into sibling sub-tenants (verified by the isolation suite of AC-SEC-1).
+2. The embedded viewer runs inside a host page with a strict CSP (no unsafe-inline, allow-listed origins) with full functionality including Acorn.Access.
+3. Monthly metering exports reconcile with the platform event ledger to ±1% (NFR-009).
 
 ---
 
@@ -352,6 +439,27 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 | NFR-010 | **Accessibility of the platform itself**: operator UIs WCAG 2.2 AA (see FR-ACC-001). | P0 | MVP |
 | NFR-011 | **Browser/device support**: viewer — last 2 versions of evergreen browsers + iOS/Android WebView; no-JS fallback per FR-IXD-002. Operator UIs — evergreen desktop browsers. | P0 | MVP |
 | NFR-012 | **Data durability**: 11-nines object durability for archive; integrity verification (hash re-check) on a rolling schedule with alerting. | P0 | MVP |
+| NFR-013 | **Resilience testing**: fault-injection (worker kill, dependency loss, region failover) exercised in staging per release and in production game-days per quarter; batch checkpoint-restart validated under injected failure. | P0 | MVP |
+| NFR-014 | **Batch SLA windows**: tenant-configurable production calendars with SLA countdown monitoring, predictive late-warning (projected completion vs. window), and prioritized preemption of lower-class jobs. | P0 | MVP |
+| NFR-015 | **Environment parity**: sandbox and staging run the same engine versions as production (N or N+1 only) so template regression tests (FR-TPL-022) are predictive. | P0 | MVP |
+
+**AC-NFR (P0 gate):**
+1. Load test at 2× MVP scale targets sustains p95 latency budgets (NFR-006) with zero cross-tenant noisy-neighbor breach (NFR-007).
+2. Simulated region loss meets RPO ≤ 5 min / RTO ≤ 1 h with a published test report; archive writes confirm synchronous replication (RPO 0).
+3. A deploy during an active 1M-record batch completes with zero record loss and the batch finishing on its starting template versions (NFR-004).
+4. Every customer-facing request carries an OpenTelemetry trace from edge to storage; a support engineer can retrieve the full trace for any communication ID within 5 minutes (NFR-008).
+
+### 17.1 Cross-domain dependencies and sequencing constraints
+
+| Dependency | Constraint |
+|---|---|
+| FR-TPL-001 → FR-ANL-030 | Outcome taxonomy and success-criteria schema must freeze before analytics GA; changes thereafter are versioned, not breaking. |
+| FR-ING-020/023 → FR-AI-* | PII/PHI classification must precede any AI service touching tenant data (minimization depends on it). |
+| FR-CMS-020 + FR-ACC-010 + FR-AI-060 → FR-RND-* | All three publication gates integrate in the pipeline before first production tenant; gates are designed as one pluggable gate framework. |
+| FR-RND-021 → FR-ARC-004 | Reproducibility tuple schema is a day-one contract; retrofit is prohibitively expensive. |
+| FR-DLV-011/016/053 → all channels | Consent/DNC/suppression enforcement is built into the orchestration core before any channel connector ships, including the first. |
+| FR-IXD-009/010 → FR-AI-006/007/041/111 | The assistant ships only after gates, grounding, hallucination detection, and the red-team release gate are operational. |
+| Acorn.Access (FR-ACC-020) → FR-IXD-001 | Widget integration and CSP compatibility are part of the viewer's definition of done, not an add-on. |
 
 ---
 
@@ -371,6 +479,15 @@ The interactive viewer is the IXM pillar's runtime. **Acorn.Access (this reposit
 8. **Prove it**: WORM archive, retention + legal hold, six-proof evidence pack ≤ 15 min, reproducibility, eDiscovery search/export.
 9. **Trust**: accessibility block-on-fail gates + evidence reports; AI governance (prompt library, model abstraction + per-tenant selection, review gates, RAG citations, confidence, no-training default, governance dashboard); SOC 2 + HIPAA-ready + SAQ-A; SSO/SCIM/RBAC; DSAR; OpenTelemetry; zero-downtime deploys; headless APIs + SDKs + viewer embed.
 10. **Language**: AI + internal-review translation workflow, glossaries, RTL for interactive/PDF, locale formatting, language fallback with parity checks.
+
+**MVP exit criteria (definition of done for the release, beyond per-domain ACs):**
+
+1. Two design-partner tenants run production volume (≥ 1M communications/month each) for 60 consecutive days within SLA.
+2. One tenant demonstrates measured call deflection ≥ 20% for an interactive communication versus its static baseline, using the published attribution methodology.
+3. A complete evidence pack for a randomly selected production communication assembles in ≤ 15 minutes in front of a tenant compliance officer.
+4. Zero assistant hallucination incidents on regulated content across all production traffic in the final 30 days (FR-AI-112 register).
+5. Accessibility: 100% of published production templates pass the WCAG 2.2 AA / PDF/UA gates or carry recorded waivers; the viewer + Acorn.Access passes an independent third-party audit.
+6. SOC 2 Type II audit period underway with no open critical findings; BAA executed with at least one healthcare tenant.
 
 **Explicitly not in MVP** (even though incumbents have some of it): AFP/PCL/Metacode native output (print-ready PDF bridges via PSPs), NBA engine, householding, postal presort, RCS/WhatsApp/voice/video channels, personalized video/audio rendering, reseller hierarchy, incumbent-format template converters, multi-region active-active. Rationale: none is required to close and prove the wedge use case, and each is a well-understood ENT build-out rather than a product-risk item.
 
@@ -402,3 +519,39 @@ The platform will **not** build:
 8. **General-purpose e-signature CLM** (contract lifecycle management, negotiation redlining). Embedded signing of communications only.
 9. **Standalone accessibility overlay claims.** Acorn.Access augments user control in the viewer; conformance is achieved in the rendered output itself (FR-ACC-001), never claimed via the widget alone.
 10. **Anonymous cross-tenant data products.** No benchmark or model product uses tenant data without explicit, revocable, per-tenant opt-in.
+
+---
+
+## Appendix A — Platform event catalog (normative names)
+
+Events are versioned (`.v1`), tenant-scoped, carry `communication_id`, `template_version_id`, `identity_id` (where consented), `journey_id`/`step_id` (where applicable), and a correlation ID from ingestion (NFR-008). Consumed by FR-ANL-001/002, webhooks (INT-002), and the archive ledger.
+
+| Family | Events |
+|---|---|
+| Ingestion | `feed.received`, `record.accepted`, `record.quarantined`, `record.rejected`, `identity.matched`, `identity.review_required` |
+| Composition | `composition.started`, `communication.composed`, `communication.gate_failed`, `batch.completed`, `batch.reconciled` |
+| Delivery | `communication.dispatched`, `communication.delivered`, `communication.bounced`, `communication.blocked` (consent/DNC/suppression, with reason), `communication.deferred` (quiet hours/blackout), `failover.triggered`, `print.handoff`, `print.inducted` |
+| Access & interaction | `communication.accessed` (auth level attached), `section.expanded`, `document.searched`, `faq.viewed`, `walkthrough.step`, `assistant.question`, `assistant.answered` (citations attached), `assistant.refused`, `assistant.escalated` |
+| Actions | `payment.started`, `payment.completed`, `payment.failed`, `dispute.submitted`, `form.submitted`, `upload.completed`, `signature.completed`, `preference.updated`, `address.updated`, `escalation.requested` |
+| Outcomes | `outcome.achieved` (outcome class + attribution basis), `outcome.window_expired`, `call.attributed` (from contact-center integration) |
+| Governance | `content.published`, `template.published`, `approval.granted`, `waiver.recorded`, `ai.generation_gated`, `ai.incident_opened`, `hold.applied`, `record.disposed` |
+
+## Appendix B — Core API surface (headless contract, FR-WLB-004)
+
+All APIs: OAuth2 client-credentials + tenant scoping, versioned paths, idempotency keys on mutations, cursor pagination, 429 + `Retry-After` (NFR-007), OpenAPI-published.
+
+| API | Purpose | Representative operations |
+|---|---|---|
+| Ingestion API | Submit data, manage feeds and mappings | `POST /v1/feeds/{feed}/records`, `POST /v1/batches`, `GET /v1/batches/{id}/reconciliation` |
+| Content API | CRUD + lifecycle on content objects | `POST /v1/content-objects`, `POST /v1/content-objects/{id}/versions/{v}/approve`, `GET /v1/content-objects/{id}/impact` |
+| Template API | Template lifecycle, import/export as code | `GET /v1/templates/{id}/export`, `POST /v1/templates/import`, `POST /v1/templates/{id}/publish` |
+| Composition API | On-demand render, batch submit, proofs | `POST /v1/compositions` (sync/async), `POST /v1/compositions/proof`, `GET /v1/communications/{id}/renditions/{format}` |
+| Delivery API | Orchestrated send, journey control | `POST /v1/deliveries`, `POST /v1/journeys/{id}/enroll`, `GET /v1/deliveries/{id}/ledger` |
+| Preference API | Preferences, consent, suppression | `GET/PUT /v1/identities/{id}/preferences`, `POST /v1/consents`, `POST /v1/suppressions` |
+| Viewer API | Secure link issuance, embed tokens, session events | `POST /v1/viewer/links`, `POST /v1/viewer/embed-tokens` |
+| Archive API | Search, retrieve, evidence packs, holds | `POST /v1/archive/search`, `POST /v1/archive/{id}/evidence-pack`, `POST /v1/legal-holds` |
+| Analytics API | Events out, aggregates, experiment results | `GET /v1/events` (stream/cursor), `GET /v1/metrics/outcomes`, `GET /v1/experiments/{id}/results` |
+| Decision API (ENT) | NBA decisions with explanations | `POST /v1/decisions`, `GET /v1/decisions/{id}/explanation` |
+| Admin API | Tenants, workspaces, users, quotas, AI governance | `POST /v1/workspaces`, `GET /v1/usage`, `GET /v1/ai/governance/report` |
+
+Webhook subscriptions cover every Appendix A event family; payloads are signed (HMAC + key rotation) with replay endpoints for recovery.
