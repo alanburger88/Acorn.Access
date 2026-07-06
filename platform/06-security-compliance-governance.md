@@ -551,6 +551,16 @@ Applies to both platform-hosted MCP servers exposing Acorn capabilities and tena
 | AIG-RED-004 | Redaction efficacy testing: seeded-leak test corpus run nightly; recall threshold ≥ 99.5% on structured identifiers; misses are Sev-2 with detector retraining loop. |
 | AIG-RED-005 | Redaction events logged (what classes masked, counts, detector versions) into AIG-AUD-001 records — provable "what the model saw." |
 
+## 3.13 AI Transparency & Model Risk Documentation (AIG-TRN)
+
+| ID | Requirement |
+|---|---|
+| AIG-TRN-001 | AI inventory: a per-tenant registry of every AI feature in use — purpose, model(s), prompt versions, data classifications touched, review gates, eval status — exportable for model-risk-management (SR 11-7 / EU AI Act-style documentation) and vendor-due-diligence questionnaires. |
+| AIG-TRN-002 | Customer disclosure: tenants receive configurable, pre-approved disclosure text for AI involvement in communications; where a jurisdiction requires labeling AI-generated content, the ACC/CMP packs enforce the label at render **[GATE]**. |
+| AIG-TRN-003 | Explainability on demand: for any AI-influenced communication, an authorized user can generate a plain-language explanation bundle — what the AI did, from which sources, under which policy version, reviewed by whom — assembled from AIG-AUD/AIG-PRV records without engineering involvement. |
+| AIG-TRN-004 | Change notification: material changes to AI behavior (model swap, prompt major version, new auto-apply class) are announced to Tenant Admins ≥ 14 days ahead for opt-out-capable features; emergency security changes are notified within 24 h after. |
+| AIG-TRN-005 | EU AI Act readiness: features classified against the Act's risk tiers; technical documentation, logging, and human-oversight requirements for any high-risk-classified capability map onto AIG-AUD, AIG-REV, and AIG-EVL controls with a maintained crosswalk. |
+
 ---
 
 # PART 4 — ACCESSIBILITY MODEL

@@ -160,7 +160,7 @@ Harness runs as a tenant-invokable API too (`POST /templates/{id}/versions/{v}/v
 | DAST | Authenticated ZAP + fuzz of public APIs against `staging` | Nightly |
 | Secrets | gitleaks pre-commit + org-wide scanning | Every push |
 | Pen-test | External firm: full platform 2×/year; AI attack-surface (assistant, MCP endpoints) 1×/year; per new major surface | Findings: crit 7d / high 30d fix SLA |
-| Tenant isolation | Automated cross-tenant probe suite: every API exercised with Tenant-A token against Tenant-B resources (403/404 required), signed-URL scope checks, cache-poisoning probes | Every deploy; **any leak = release abort + SEV-1 process (C.7 runbook 6)** |
+| Tenant isolation | Automated cross-tenant probe suite: every API exercised with Tenant-A token against Tenant-B resources (403/404 required), signed-URL scope checks, cache-poisoning probes | Every deploy; **any leak = release abort + SEV-1 process (C.6 runbook 6)** |
 
 **Hostile-file fuzzing of ingestion parsers** — PDF/XML/EDI/AFP/print-streams are primary attack surfaces:
 - Continuous coverage-guided fuzzing (libFuzzer/AFL++ harnesses per parser) on dedicated fleet, 10k CPU-hours/week; OSS-Fuzz-style corpus mgmt.
@@ -301,7 +301,7 @@ Rules: maintain **N+1 region headroom** — any region must absorb its DR-pair's
 | 1k archive doc-months | $0.05 | $0.035 (tiering) |
 | Gross-margin guardrail | ≥ 75% blended | ≥ 80% |
 
-Levers tracked in FinOps reviews (C.15): spot/preemptible batch pools (target 70% of batch on spot), render-output caching (identical input hash → cache hit, target 12% hit rate), model routing and prompt caching (target 40% token-cost reduction), storage tiering at 13 months.
+Levers tracked in FinOps reviews (C.14): spot/preemptible batch pools (target 70% of batch on spot), render-output caching (identical input hash → cache hit, target 12% hit rate), model routing and prompt caching (target 40% token-cost reduction), storage tiering at 13 months.
 
 ---
 
@@ -317,7 +317,7 @@ Levers tracked in FinOps reviews (C.15): spot/preemptible batch pools (target 70
 
 **Verification:**
 - **DR game days quarterly per region-pair:** full evacuation drill of a synthetic "shadow tenant" monthly (automated), and a real-tenant-traffic regional failover in a maintenance window 2×/year. Measured RTO/RPO published internally; miss = corrective-action items with owner and date.
-- Backup-restore verification: C.13.
+- Backup-restore verification: C.11.
 - Customer-VPC deployments: DR is customer-operated; we ship the same drill automation (`acornctl dr-drill`) and require an annual attested drill for SLA-backed contracts.
 
 ## C.2 Zero-Downtime Deploys
@@ -416,13 +416,13 @@ Levers tracked in FinOps reviews (C.15): spot/preemptible batch pools (target 70
 5. Impact comms: journey timers and NBA freshness degrade with lag — auto-banner in tenant console when lag > 5 min ("event processing delayed"). Deliveries already submitted are unaffected; state that explicitly.
 6. Exit: lag < 30s for 30 min; verify no journey double-fires (idempotent journey steps assert this) and reconcile event counts vs. producer offsets.
 
-## C.7 SIEM Integration & Security Monitoring
+## C.8 SIEM Integration & Security Monitoring
 
 - All authn/authz decisions, admin actions, data exports, template publishes, model-config changes, and archive access emit CEF/OCSF events to the SIEM (SaaS: our Chronicle/Sentinel instance; VPC deployments: customer's SIEM via syslog/HTTPS forwarder, documented event schema).
 - Detections: impossible travel on admin accounts, mass-export anomalies (docs retrieved > 5× tenant baseline), cross-tenant probe patterns, guardrail-trip clustering (coordinated prompt-injection campaigns), sandbox-escape indicators from parser workers, delivery-destination anomalies (sudden new-domain concentration).
 - SOC coverage 24/7 (follow-the-sun); detection-to-triage < 15 min for critical alerts; purple-team exercises quarterly validate top-20 detections.
 
-## C.8 Vulnerability Management SLAs
+## C.9 Vulnerability Management SLAs
 
 | Severity (CVSS + exploitability context) | Internet-facing / parser surface | Internal |
 |---|---|---|
@@ -433,40 +433,40 @@ Levers tracked in FinOps reviews (C.15): spot/preemptible batch pools (target 70
 
 Weekly vuln review; SLA breaches auto-escalate to service owner's director. Base images rebuilt weekly regardless; emergency rebuild pipeline < 4h from CVE to fleet rollout. On-prem: patched LTS images published on the same SLAs with customer notification.
 
-## C.9 Policy-as-Code & Infrastructure-as-Code
+## C.10 Policy-as-Code & Infrastructure-as-Code
 
 - 100% of infrastructure in Terraform (modules versioned, no console changes — drift detection hourly, auto-ticket + auto-revert for security-relevant drift).
 - OPA/Rego policy packs enforced at three points: CI (plan-time), admission control (Kubernetes/Gatekeeper), and runtime audit. Policies cover: tenant-residency pinning, encryption-at-rest flags, public-exposure bans, mandatory tags (tenant, cost-center, data-class), image provenance (cosign-signed only).
 - Compliance policy packs (A.15) share the same engine — one policy language from infra to document content rules.
 - Change management: all prod change via PR + CI; break-glass path logged, time-boxed (4h), and auto-reviewed next business day.
 
-## C.10 Backup / Restore Verification
+## C.11 Backup / Restore Verification
 
 - Backups: control-plane DBs — continuous WAL + daily snapshot, 35-day PITR; archive — object versioning + dual-region (immutable, backup ≠ delete-protection substitute: object lock is primary); Kafka — tiered storage + cluster linking; configs/templates — versioned store, exportable per tenant.
 - **Restore verification, not backup verification:** weekly automated restore of a random control-plane DB snapshot into an isolated env + smoke suite; monthly random-sample archive restore (10k docs, hash-verify); quarterly full "rebuild a region from backups" exercise as part of DR game day. Restore-test failure = SEV-2.
 - Backup access is a privileged operation (separate credentials, dual-control for full-DB restores) — backups are a ransomware target.
 
-## C.11 Quota & Rate-Limit Operations
+## C.12 Quota & Rate-Limit Operations
 
 - Every tenant has quota envelopes: API RPS, render jobs/hour, delivery msgs/hour per channel, AI tokens/day, storage. Defaults by tier; overrides via ticketed config change (PR-reviewed).
 - Enforcement returns 429 + `Retry-After` + quota headers; batch submissions over quota are queued (not rejected) with ETA in the response.
 - Ops dashboards: top-10 tenants by utilization %, tenants > 80% of any quota (proactive CSM outreach), noisy-neighbor detection (per-tenant resource attribution on shared pools; auto-throttle above 3× fair share with tenant notification).
 - Quota-raise SLA: standard raises < 1 business day; emergency (tenant incident) via on-call, logged.
 
-## C.12 SLA Monitoring & Tenant-Facing Status
+## C.13 SLA Monitoring & Tenant-Facing Status
 
 - Contract SLAs computed from the same SLI pipeline as internal SLOs (no parallel bookkeeping); per-tenant SLA reports auto-generated monthly with credit calculation where owed.
 - Public status page (component-level: Rendering, Delivery per channel, Viewer, Assistant, Archive, APIs) + **per-tenant private status** view showing only their regions/channels and their open incident impact; webhook + email subscriptions.
 - Status automation: SLO burn-rate pages auto-create a draft status incident; IC confirms wording (templates from C.5) — target < 30 min to first public post for SEV-1/2. Post-incident, RCA summary published to affected tenants within 5 business days.
 
-## C.13 FinOps Operations
+## C.14 FinOps Operations
 
 - **Per-tenant cost attribution:** every workload tagged (tenant, capability, environment); shared pools attributed by metered consumption (render-seconds, tokens, GB-months, messages). Daily per-tenant COGS dashboard; margin per tenant visible to finance and account teams.
 - **Anomaly alerts:** per-tenant and per-capability spend baselines; alert at +40% day-over-day or +25% week-over-week with attribution drill-down (which job/model/route). AI spend is its own class: **per-tenant AI budgets** with soft alert at 80%, hard cap behavior configurable (throttle vs. bill-through, contractual).
 - Unit-economics review monthly against B.8 targets; regressions get an engineering owner.
 - Efficiency automation: idle-pool reaper, spot orchestration for batch (fallback to on-demand at deadline risk — integrates with RB-07 math), storage-tiering jobs, prompt/model routing reports (tokens per answer trend).
 
-## C.14 Developer Documentation Outline (docs.acorn-communicate.com)
+## C.15 Developer Documentation Outline (docs.acorn-communicate.com)
 
 1. **Getting Started** — 15-minute quickstart (ingest a CSV → render a statement → deliver via email sandbox → view in portal); environment setup; auth (API keys, OAuth, service principals); Postman/Insomnia collections; sample tenant with seeded data.
 2. **Concepts** — architecture overview; tenancy & data residency; canonical data model; templates & versioning; rendering pipeline & output formats; delivery orchestration & fallback; journeys & events; interactive documents & embedded actions; the grounded assistant (how grounding, citations, and guardrails work); NBA; archive & retention model; deployment models (SaaS / private cloud / VPC).
