@@ -381,6 +381,20 @@ One pattern, everywhere. Users learn it once.
 
 **Action proposals = reviewable diffs.** The copilot never mutates directly. Proposals render in the surface's native diff idiom: canvas staging layer (Designer), tracked changes (text), before/after rule sentences (logic), node ghosting (Journey Canvas). Controls are always **Accept · Edit · Reject**, per-item and bulk; accept is a single undoable step. Destructive or wide-blast proposals (>N blocks, any live object) require typed confirmation.
 
+Anatomy of a proposal card (AIProposalCard, §7.2):
+
+```
+┌ ✦ Proposal · Rewrite late-fee paragraph ────────────────────────────┐
+│ "Simplified to grade-7 reading level; kept legal phrasing intact."  │
+│ ┌ before ───────────────┐  ┌ after ────────────────┐               │
+│ │ …fee of $12.00 shall… │  │ …we'll add a $12 late…│               │
+│ └───────────────────────┘  └───────────────────────┘               │
+│ Confidence: ●●○ Medium · Model: acorn-writer-2 · Prompt: RW-late v3 │
+│ Grounded in: [Policy FIN-12] [Template v12 §Fees] [Style guide]     │
+│           [ Reject ]   [ Edit… ]              [ Accept ⌘↵ ]         │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
 **Confidence & provenance display:** each proposal card carries — confidence band (High/Medium/Low with tooltip explaining basis; Low defaults to unchecked in bulk accepts) · model + prompt version (from Prompt Management registry) · grounding sources · timestamp. Provenance persists after acceptance: AI-touched regions keep a subtle violet corner dot; hover reveals the full card. Fleet-level rollups live in the AI Governance Center.
 
 **Automatic audit note:** accepting any AI proposal writes an immutable audit entry — *"Change set #931 was AI-assisted (model M, prompt P v3), proposed 2026-07-06 14:02, accepted by A. Burger"* — attached to the version, surfaced in Version Comparison's "What AI touched" filter and in Compliance Evidence exports. Users cannot opt out; the note is presented as protection, not surveillance ("Your reviewers see exactly what to double-check").
@@ -435,6 +449,8 @@ The document a customer opens is itself a product. Mobile-first, brand-themed, f
 | **Step-up** | Viewing = base auth; high-risk actions (pay full balance change, sign) trigger step-up inline without losing scroll position. |
 
 Session badge (identity + sign-out) persistent; idle timeout warns at T-2min with a one-click extend.
+
+Viewer resilience states: **slow network** — server-rendered summary + skeleton sections, actions enabled as hydration completes; **payload mismatch** (data changed since send) — banner "Figures updated since this was sent" with toggle between as-sent and current, defaulting to as-sent for regulated docs; **action failure** — inline retry with reference ID and assistant offer; **document superseded** — interstitial linking to the newest version while keeping the original reachable (audit parity).
 
 ### 6.3 Built-in accessibility widget layer (Acorn.Access)
 

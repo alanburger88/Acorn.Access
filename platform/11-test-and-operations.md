@@ -24,11 +24,11 @@ Target shape: ~70% unit, ~20% component/contract, ~8% integration, ~2% E2E. Devi
 | Domain | Unit | Component / Contract | Integration | E2E / Golden | Notes |
 |---|---|---|---|---|---|
 | Ingestion & normalization | Parser units per format (CSV/JSON/XML/EDI/print-stream) | Schema-contract tests per connector | Pipeline: raw file → canonical model | Corpus replay (10k real-shaped files) | Heavy fuzzing (A.13) |
-| Template & composition | Expression engine, logic blocks | Data-contract tests vs. schemas (A.5) | Compose service + content store | Template harness (A.7) | Every template version gated |
-| Rendering (HTML5/PDF/PDF-UA/AFP/PCL/PS) | Layout primitives, font metrics, pagination | Renderer API contracts | Multi-engine parity checks | **Golden-output suite (A.4)** — pyramid inverts here: golden tests dominate | Deterministic render mode in CI |
-| Delivery (email/SMS/RCS/WhatsApp/push/voice/print) | Channel adapters, retry logic | Provider API contract tests (recorded + sandbox) | Orchestrator + provider sandboxes | Simulation-mode journeys, failover chaos (A.10) | No live sends in CI |
+| Template & composition | Expression engine, logic blocks | Data-contract tests vs. schemas (A.6) | Compose service + content store | Template harness (A.8) | Every template version gated |
+| Rendering (HTML5/PDF/PDF-UA/AFP/PCL/PS) | Layout primitives, font metrics, pagination | Renderer API contracts | Multi-engine parity checks | **Golden-output suite (A.5)** — pyramid inverts here: golden tests dominate | Deterministic render mode in CI |
+| Delivery (email/SMS/RCS/WhatsApp/push/voice/print) | Channel adapters, retry logic | Provider API contract tests (recorded + sandbox) | Orchestrator + provider sandboxes | Simulation-mode journeys, failover chaos (A.11) | No live sends in CI |
 | Interactive docs & viewer | Component library, action handlers | Viewer ↔ document-API contracts | Embedded actions round-trip | Playwright cross-browser + a11y | Perf budgets asserted (B.4) |
-| AI assistant / NBA / journeys | Prompt builders, retrievers, guardrail code | RAG contract: chunker→index→retriever | Grounded answer pipeline | **Eval suites (A.9)** | Evals gate model/prompt changes |
+| AI assistant / NBA / journeys | Prompt builders, retrievers, guardrail code | RAG contract: chunker→index→retriever | Grounded answer pipeline | **Eval suites (A.10)** | Evals gate model/prompt changes |
 | Archive & retention | WORM adapters, hash chains | Retrieval API contracts | Ingest→seal→retrieve→verify | Legal-hold + disposition scenarios | Immutability proven per release |
 | Control plane / tenancy | Policy engine, quota logic | Tenant-isolation contract tests | Cross-service authz matrix | Multi-tenant E2E with 3 synthetic tenants | Isolation tests are SEV-1-grade gates |
 
@@ -40,10 +40,22 @@ Coverage floors (merge-blocking): 85% line / 75% branch on core services; 95% on
 |---|---|---|---|
 | `ci` | Per-PR ephemeral (Kubernetes namespace per pipeline) | Synthetic only | All mocked/recorded |
 | `staging` | Release candidate soak, full suite nightly | Synthetic + anonymized golden corpus | Provider sandboxes |
-| `perf` | Load/chaos, production-sized (scaled 1:4) | Volume-synthetic (A.6) | Sandboxes + blackhole SMTP/SMS sinks |
+| `perf` | Load/chaos, production-sized (scaled 1:4) | Volume-synthetic (A.7) | Sandboxes + blackhole SMTP/SMS sinks |
 | `prod-canary` | 1–5% traffic canaries | Real | Real |
 
-## A.4 Golden-Output Testing for Renderers
+## A.4 Test Data Management
+
+| Data class | Source | Where usable | Controls |
+|---|---|---|---|
+| Canonical golden corpus | Hand-curated + AI-mined (A.7) | All envs | Versioned in git-LFS; changes reviewed like code |
+| Synthetic tenant-shaped data | Schema-driven generators | All envs | Watermarked, delivery-blocked in prod |
+| Anonymized production samples | Tenant-consented, DPA-covered, irreversibly pseudonymized (format-preserving) | `staging` only | DLP scan on ingest to staging; 90-day TTL; per-tenant opt-out honored |
+| Real tenant data | Production | `prod` + `prod-canary` only | Never copied to lower envs — no exceptions, enforced by egress policy |
+| Attack corpora (hostile files) | Public CVE PoCs + fuzzer finds | Isolated fuzz fleet + `ci` sandboxes | Stored encrypted, access-logged |
+
+Rule: a test that can only be reproduced with real production data is a defective test — file a bug against the synthetic generator instead.
+
+## A.5 Golden-Output Testing for Renderers
 
 **Corpus:** ≥ 500 canonical documents spanning: every layout primitive, 40+ locales/scripts (incl. RTL, CJK, Thai line-breaking), tables >100pp, charts, barcodes (QR/Datamatrix/IMB), OMR marks, transpromo zones, duplex/tray directives.
 
@@ -64,21 +76,21 @@ Coverage floors (merge-blocking): 85% line / 75% branch on core services; 95% on
 - Cross-engine parity: the same canonical input rendered to PDF and AFP must pass a **layout-parity check** (text runs and positions extracted from both, matched within 0.5pt).
 - Golden suite runtime budget: ≤ 12 min on 32 parallel CI workers (sharded by document).
 
-## A.5 Data-Contract Testing (Ingestion ↔ Template)
+## A.6 Data-Contract Testing (Ingestion ↔ Template)
 
 - Every template declares a **typed input contract** (JSON Schema 2020-12 + semantic annotations: currency, locale, PII class). Every ingestion mapping declares a **produced contract**.
 - CI computes producer/consumer compatibility (Pact-style, schema-registry backed): a mapping change that breaks any published template's contract **fails the mapping build**, listing affected templates and tenants.
 - Contract evolution rules: additive fields OK; type narrowing, field removal, or nullability changes require a template major-version bump and dual-publish window.
 - **Boundary battery** auto-generated from each schema: nulls, empty arrays, max-length strings, negative currency, 0-line-item invoices, 10k-line-item invoices, mixed-locale names, emoji, `Ω`/combining characters. Templates must render (or explicitly reject with a mapped error) every case — silent truncation is a failure.
 
-## A.6 AI-Generated Test Cases & Synthetic Data
+## A.7 AI-Generated Test Cases & Synthetic Data
 
 - **Schema-faithful synthesis:** generator reads the tenant's data contract and produces statistically plausible records (distributions learned from *aggregate* stats only — never row-level tenant data leaves the tenant boundary). Faker-style providers per semantic type (IBAN, NHS number, SSN-shaped-but-invalid, etc.).
 - **Privacy guarantees:** synthetic values are generated from published aggregate stats (k ≥ 50 per bucket); validators assert no synthetic value collides with a real customer identifier (bloom-filter check inside tenant boundary); synthetic corpora are watermarked (`x-acorn-synthetic: true`) and rejected by production delivery.
 - **AI case mining:** an LLM agent proposes edge cases from template logic ("what input makes this conditional table overflow?"), from historic incident postmortems, and from parser code paths. Proposed cases are executed automatically; failures are triaged into the permanent suite. Target: ≥ 30 mined cases per new template family, ≥ 100 per new parser.
 - Volume synthesis for perf env: 50M-document corpora generated at 200k docs/min, reproducible from a seed.
 
-## A.7 Template Test Harness in CI (Publish Gate)
+## A.8 Template Test Harness in CI (Publish Gate)
 
 Every template version must pass **all** of the following before `publish` is allowed (SaaS and on-prem alike):
 
@@ -95,7 +107,7 @@ Every template version must pass **all** of the following before `publish` is al
 
 Harness runs as a tenant-invokable API too (`POST /templates/{id}/versions/{v}/verify`) so designers get pre-publish feedback in the studio in < 60s.
 
-## A.8 Accessibility Regression Testing
+## A.9 Accessibility Regression Testing
 
 - **Automated (every PR + every template publish):** axe-core (WCAG 2.2 AA ruleset) across viewer, portal, designer UIs and all rendered HTML documents; veraPDF for PDF/UA-1; custom checks for table header associations, form-field labels in interactive PDFs, focus order.
 - **Screen-reader smoke suites (nightly + release):** scripted NVDA (Windows/Chromium), VoiceOver (macOS/Safari), TalkBack (Android) runs over 12 canonical journeys (open statement → navigate table → invoke embedded action → converse with assistant). Assertions on announced text via accessibility-tree snapshots; 100% journey completion required.
@@ -103,7 +115,7 @@ Harness runs as a tenant-invokable API too (`POST /templates/{id}/versions/{v}/v
 - **Manual audit:** external audit per major release (quarterly) + any viewer architecture change; findings tracked with 30-day fix SLA for AA violations.
 - **Block-on-fail:** any new critical/serious automated violation blocks merge; any PDF/UA validation failure blocks template publish and release. No waiver path below VP Engineering + Accessibility Officer dual sign-off, max 30-day expiry.
 
-## A.9 AI Evaluation Testing
+## A.10 AI Evaluation Testing
 
 **Document assistant (grounded Q&A):**
 
@@ -122,14 +134,14 @@ Harness runs as a tenant-invokable API too (`POST /templates/{id}/versions/{v}/v
 
 **Change management:** any change to model version, prompt, retrieval config, chunking, guardrail, or temperature = a **model change** and runs the full eval battery in CI (≤ 45 min budget, sharded). Results stored immutably per release for audit. Shadow mode (new config answers logged, not served) for 48h in production before full cut-over.
 
-## A.10 Delivery Testing
+## A.11 Delivery Testing
 
 - **Provider sandboxes:** contract tests against SES/SendGrid mail sandboxes, Twilio/Sinch test creds, Meta WhatsApp test numbers, RCS test agents, FCM/APNs dev, print-facility test endpoints. Recorded-replay (VCR-style) in PR CI; live sandbox nightly.
 - **Simulation mode:** first-class platform feature — a journey runs end-to-end, producing delivery *intents* and rendered artifacts with zero external submission; assertions on channel selection, timing, suppression, and fallback. Used in CI and by tenants pre-launch.
 - **Chaos-tested failover:** monthly automated chaos runs in `perf`: kill primary email provider mid-batch → assert secondary picks up within 60s with 0 duplicates and 0 losses (idempotency-key verification); degrade SMS provider to 50% error → assert circuit-break + reroute; **digital→print failover**: force hard bounces / expired consent → assert print fallback composes, batches to the correct facility, and respects postal cutoffs.
 - Bounce/complaint webhook handling tested with recorded provider payloads (all providers, all event types, out-of-order and duplicate delivery).
 
-## A.11 Load & Performance Testing
+## A.12 Load & Performance Testing
 
 - **Batch renders:** weekly perf-env run must sustain **2M renders/hour per 100 render workers** (statement-class docs, see B.1) for 4h with < 0.01% failures. **Checkpointed restart** drill included: kill 30% of workers at T+2h → job resumes from checkpoints, 0 duplicate documents (dedupe on document ID + content hash), total completion penalty ≤ 8 min.
 - **On-demand:** k6 scenarios at 2× peak (peak = 500 RPS render API per region): p99 render < 2s asserted.
@@ -138,7 +150,7 @@ Harness runs as a tenant-invokable API too (`POST /templates/{id}/versions/{v}/v
 - **Soak:** 72h staging soak per release: memory-leak detection (RSS growth < 2%/24h per service), connection-pool exhaustion checks.
 - Regression policy: any p95 regression > 10% vs. 4-week baseline blocks release.
 
-## A.12 Security Testing
+## A.13 Security Testing
 
 | Layer | Practice | Cadence / Gate |
 |---|---|---|
@@ -155,20 +167,20 @@ Harness runs as a tenant-invokable API too (`POST /templates/{id}/versions/{v}/v
 - Structured attack corpora: XXE/billion-laughs XML, zip/decompression bombs, malformed xref PDFs, JS-bearing PDFs, font-table exploits, EDI delimiter abuse, AFP structured-field overflows, polyglot files.
 - Parsers run in **sandboxed workers** (gVisor, no network egress, 512MB/30s caps); a crash is a bug, a sandbox escape attempt is a SEV-1. New-crash rate must be 0 for 2 weeks before a parser GA.
 
-## A.13 Migration Verification Testing
+## A.14 Migration Verification Testing
 
 For customers migrating from legacy CCM (Quadient/OpenText/Smart Communications etc.):
 - **Parallel-run comparison harness:** same production input batch → legacy output + Acorn output → automated compare (raster diff for PDF/print with configurable masks for known-acceptable deltas like font substitution; field-extraction compare for amounts, dates, addresses, barcodes — **0 tolerance on monetary values and addresses**).
 - Acceptance gate per migrated template: ≥ 99.5% documents auto-matched; 100% of mismatches human-adjudicated; sign-off recorded in migration studio with evidence pack.
 - Ramp protocol: 1% → 10% → 50% → 100% traffic with parallel-run continuing one full billing cycle at each stage.
 
-## A.14 Compliance Regression Testing
+## A.15 Compliance Regression Testing
 
 - **Evidence-pack generation verified per release:** CI produces a complete evidence pack (control mappings, test results, a11y reports, eval results, SBOMs, isolation-probe results) and a validator asserts pack completeness against the control catalog (SOC 2, ISO 27001, HIPAA, PCI-scope controls). Missing evidence = release blocked.
 - Retention/disposition scenario tests: create → hold → attempted delete (must fail) → hold release → disposition (must succeed + certificate) — run per release against archive.
 - Consent & preference regression: 40 scenarios (withdrawn consent mid-journey, jurisdictional quiet hours, GDPR erasure vs. archive legal basis) asserted in simulation mode.
 
-## A.15 Test Gates Matrix
+## A.16 Test Gates Matrix
 
 | Suite | PR merge | Deploy to prod | Template publish | Model/prompt change | Tenant onboarding |
 |---|---|---|---|---|---|
@@ -425,7 +437,7 @@ Weekly vuln review; SLA breaches auto-escalate to service owner's director. Base
 
 - 100% of infrastructure in Terraform (modules versioned, no console changes — drift detection hourly, auto-ticket + auto-revert for security-relevant drift).
 - OPA/Rego policy packs enforced at three points: CI (plan-time), admission control (Kubernetes/Gatekeeper), and runtime audit. Policies cover: tenant-residency pinning, encryption-at-rest flags, public-exposure bans, mandatory tags (tenant, cost-center, data-class), image provenance (cosign-signed only).
-- Compliance policy packs (A.14) share the same engine — one policy language from infra to document content rules.
+- Compliance policy packs (A.15) share the same engine — one policy language from infra to document content rules.
 - Change management: all prod change via PR + CI; break-glass path logged, time-boxed (4h), and auto-reviewed next business day.
 
 ## C.10 Backup / Restore Verification

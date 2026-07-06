@@ -60,7 +60,20 @@ Workforce identities (tenant staff, partner staff, Acorn operators) always feder
 | SEC-AZN-004 | Data-classification gating | `Restricted-*` classifications require purpose-of-use assertion in the access request; assertion is logged and included in evidence packs. |
 | SEC-AZN-005 | JIT elevation | Production data access for Operators/SREs is just-in-time: ticket reference, approver, TTL ≤ 4 h, auto-revoke, session recording for console access. |
 
-### 1.2.3 Segregation-of-duties (SoD) matrix **[GATE]**
+### 1.2.3 Data classification scheme (referenced by ABAC, encryption, AI routing, redaction)
+
+| Class | Examples | Handling floor |
+|---|---|---|
+| Public | Published marketing templates, brand assets | Integrity controls only |
+| Internal | Draft content, operational metrics | AuthN + role scoping |
+| Confidential | Tenant configuration, connector topology | ABAC scoping, encrypted, no external egress |
+| Restricted-PII | Names, addresses, account relationships | Field-level controls, purpose-of-use, redaction before AI (AIG-RED) |
+| Restricted-PHI | Diagnosis, treatment, claims detail | HIPAA pack mandatory, minimum-necessary gating, private-model routing only |
+| Restricted-PCI | PAN, card verification data | Never stored/processed outside CDE path (CMP-PCI); token references only |
+
+Classification is assigned at ingestion (data-dictionary mapping + classifiers), inherited through composition, and travels with the data as a label the PDP evaluates on every access.
+
+### 1.2.4 Segregation-of-duties (SoD) matrix **[GATE]**
 
 Enforced by the PDP at transaction time — not by convention. A single identity may hold conflicting roles only via a Tenant-Admin-approved SoD exception, which is itself an audited, expiring artifact.
 
@@ -207,7 +220,18 @@ The platform's most hostile input surface is ingestion: it parses attacker-influ
 | SEC-AUD-006 | Retention | Audit logs retained ≥ 400 days hot, ≥ 7 years archived (tenant-configurable upward; regulatory pack may force longer, e.g., CMP-GLB). |
 | SEC-AUD-007 | Clock & ordering | Hybrid logical clocks for cross-service ordering; audit consumers can reconstruct causal order of author → approve → render → deliver. |
 
-## 1.12 Threat Model Summary (STRIDE per major surface)
+## 1.12 Vulnerability & Incident Management (SEC-VUL / SEC-IRP)
+
+| ID | Control | Requirement |
+|---|---|---|
+| SEC-VUL-001 | Vulnerability management | Continuous scanning of hosts, containers, and dependencies; remediation SLAs: Critical 7 days (KEV 48 h), High 30 days, Medium 90 days; exceptions are risk-accepted artifacts with expiry and compensating controls. |
+| SEC-VUL-002 | Patch cadence | Base images rebuilt weekly (SEC-SCM-003); managed-service patching tracked in the control inventory; private-cloud/VPC customers receive the same patched releases with signed release notes. |
+| SEC-IRP-001 | Incident response plan | Documented IR plan with severity matrix, on-call rotation, and tenant-communication runbooks; tabletop exercises twice yearly incl. one AI-specific scenario (prompt-injection-driven data exposure) and one cross-tenant scenario. |
+| SEC-IRP-002 | Tenant notification | Confirmed incidents affecting a tenant's data notified per contract (default ≤ 24 h for confirmed breach, ≤ 72 h status cadence); notification content supports the tenant's own regulatory clocks (HIPAA 60-day, GDPR 72-hour, state banking regulators). |
+| SEC-IRP-003 | Forensics readiness | Hash-chained audit logs (SEC-AUD), flow logs, and per-tenant access telemetry retained to support forensic reconstruction; forensic copies preserved under legal-hold machinery (CMP-RET-003). |
+| SEC-IRP-004 | AI incident class | Model misbehavior with customer impact (hallucinated regulated content delivered, leakage, gate bypass) is a first-class incident type with its own runbook: feature kill switch (AIG-PRM-005), affected-communication identification via AI audit trail (AIG-AUD-001), and regulator-ready impact report. |
+
+## 1.13 Threat Model Summary (STRIDE per major surface)
 
 | Surface | Spoofing | Tampering | Repudiation | Info disclosure | DoS | Elevation of privilege |
 |---|---|---|---|---|---|---|
