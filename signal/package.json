@@ -1,0 +1,28 @@
+{
+  "name": "acorn-signal",
+  "version": "0.1.0",
+  "description": "Agent-Ready Customer Communication Infrastructure — turns every regulated customer communication into a trusted, verifiable Outcome Packet",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "start": "node --experimental-strip-types src/cli.ts serve"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.0.0"
+  },
+  "license": "UNLICENSED",
+  "private": true
+}
