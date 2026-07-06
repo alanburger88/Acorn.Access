@@ -308,7 +308,21 @@ with each quarterly matrix re-score.
 | **OEM embedding** | Once a PSP/core-vendor embeds Acorn, replacement requires their re-platforming — distribution moat on top of product moat | 24–36 mo |
 | **Agent ecosystem position** | If enterprise agents standardize on Acorn's MCP tools for communications, Acorn becomes the default "communications capability" for the agentic stack | 12–24 mo, window-limited |
 
-### 4.3 What would falsify this strategy (review triggers)
+### 4.3 Competitive Monitoring Plan (owned by Product Strategy, reviewed quarterly)
+
+| Watch item | Signal source | Why it matters | Response if triggered |
+|---|---|---|---|
+| Quadient Inspire AI roadmap (Evolve releases, acquisitions) | Release notes, Inspire Days, analyst briefings | Largest incumbent; an acquired AI-content startup could close rows 20–23 fast | Accelerate proof-artifact publication; sharpen migration offer targeting Inspire estates |
+| Smart Communications MCP/agent announcements | Product blog, API changelog | Most likely first credible MCP mover (best current API surface, row 38) | Ship agent-safety differentiators (policy, approval, audit) ahead of their connector-level parity |
+| Messagepoint MARCIE scope expansion | Releases, healthcare-payer wins | If MARCIE grows composition/delivery, they become full-stack and our §3.7 comparison weakens | Emphasize one-platform TCO; consider partnership/coexistence positioning instead of head-on |
+| OpenText Aviator × Exstream integration depth | OpenText World, docs | Could neutralize "legacy can't do AI" narrative for their installed base | Target their migration-fatigued accounts with fixed-scope migration offers |
+| Precisely EngageOne Video pricing/packaging | Partner channel, deal intel | Sets the market price anchor for personalized video (our row 14 gap until Phase 3) | Keep video partner-delivered until demand proves; don't build early |
+| Adobe AJO + Forms convergence for regulated comms | Adobe Summit, AEM release notes | Adobe moving down into regulated CCM would contest fintech/utility segments | Deepen the compliance/print/archive moat rows Adobe won't build |
+| EU AI Act enforcement practice for genAI in customer comms | Regulator guidance, enforcement actions | Shapes how aggressive embedded assistants can be in EU deployments | Pre-built conformity documentation; region-specific assistant policy profiles |
+| PDF/UA-2 + WCAG adoption in procurement language | RFP corpus, EU Accessibility Act enforcement | Expands the value of block-on-fail gates (row 30) | Publish conformance benchmarks vs named competitors |
+| PSP consolidation (Doxim/MHC-adjacent M&A) | Trade press | Changes OEM channel map; an acquired PSP may inherit a competing platform | Prioritize OEM signings with independence-minded PSPs early in Phase 3 |
+
+### 4.4 What would falsify this strategy (review triggers)
 
 - A top-3 incumbent ships a production embedded-in-document grounded assistant before our GA.
 - Migration automation benchmarks below ~40% on two consecutive real estates.
@@ -316,3 +330,24 @@ with each quarterly matrix re-score.
 - MCP/agent usage remains negligible across the enterprise market through 2027.
 
 Revisit this document quarterly; re-score matrix rows 9–14, 20–26, 30, 39 each cycle.
+
+---
+
+## Appendix A — Confidence Levels by Vendor Assessment
+
+| Vendor | Confidence | Basis | Priority for validation |
+|---|---|---|---|
+| Quadient | High | Extensive public documentation, analyst coverage, practitioner community | Medium — validate AI roadmap claims |
+| OpenText | Medium-High | Public docs; product-line overlap (Exstream vs Communications Center lineage) creates ambiguity per capability | Medium |
+| Smart Communications | High | Public API docs, clear product boundaries | High — fastest mover on rows 38–39 |
+| Messagepoint | Medium-High | Strong public MARCIE documentation; downstream-dependency claims inferred | Medium |
+| Precisely EngageOne | Medium | Less public detail post-acquisitions; video capability well documented | High — portfolio direction unclear |
+| Adobe AEM Forms | High | Extensive public docs; scoring depends on assumed AJO/Target attach (footnote 5) | Low |
+| Doxim | Medium | Mid-market vendor, thinner public technical documentation | Medium — direct competitive overlap in CU segment |
+| Broadridge | Medium | BPO model obscures software capability boundaries | Low — coexistence more likely than competition |
+| Fiserv | Medium | Communications capability documented mostly via core-banking materials | Low |
+| CSG | Medium | Xponent documented; CCM composition depth inferred | Low |
+| MHC | Low-Medium | Limited public technical depth | Low |
+
+Validation methods per cycle: analyst inquiry (2/qtr), win/loss interviews (all competitive
+deals), partner/SI intelligence, public release-note diffing on rows flagged in §2.1.

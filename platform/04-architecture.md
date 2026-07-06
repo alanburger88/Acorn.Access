@@ -268,6 +268,18 @@ True exactly-once delivery does not exist across third-party providers; we engin
 3. **Consumer-side dedupe**: all event consumers are idempotent by design, keyed on CloudEvents `id`; processing offsets commit only after effect + dedupe record.
 4. **Reconciliation as backstop**: daily provider reconciliation (DSN logs, PSP manifests, aggregator reports) diffed against the delivery ledger; discrepancies raise `delivery.reconciliation-mismatch` events routed to operations.
 
+### 4.6 Resilience patterns (standard toolbox)
+
+| Failure mode | Pattern | Where enforced |
+|---|---|---|
+| Downstream provider slow/down | Circuit breaker + outlier ejection; failover to secondary provider per channel | Mesh + channel adapter config |
+| Kafka partition unavailability | Producer retries with outbox replay; consumers resume from committed offset | Chassis library |
+| Render engine crash on poison input | Record-level quarantine; chunk continues; engine sandboxed per-process | Render worker supervisor |
+| Regional dependency brownout | Load shedding by priority class (economy batch pauses first); admission control at gateway | Priority-aware schedulers |
+| Duplicate webhook/event delivery | Consumer dedupe on CloudEvents `id`; provider replay-window checks | Chassis + adapter |
+| Thundering-herd on cache expiry | Request coalescing + jittered TTLs in render-reuse and viewer caches | Cache client library |
+| Clock skew across services | All ordering decisions use event-store sequence, never wall clock | Lifecycle event store |
+
 ---
 
 ## 5. Data Architecture
@@ -430,6 +442,20 @@ Partner (reseller / SI / program manager)
 - Priority inheritance: a tenant's plan maps to default priority classes; per-job overrides bounded by plan ceiling.
 - **Feature packs**: declarative bundles (e.g., "Healthcare pack" = PHI handling defaults + HIPAA policy bundle + FHIR connector) toggled per tenant; flags evaluated via the central feature-flag service with tenant targeting.
 - **Data residency routing**: tenant home region is immutable metadata; the global control plane routes all data-plane operations to the home region; cross-region features (global search across a partner's tenants) operate on metadata only.
+
+---
+
+### 7.5 Tenant onboarding flow
+
+Onboarding is fully automated and idempotent — a `Tenant` resource applied to the control plane drives everything:
+
+1. **Provision**: control plane assigns home region + isolation tier; the regional operator creates namespace/node-pool (siloed tiers), database schema or instance, object-storage prefixes/buckets with encryption config, Kafka quotas/topics, and search/vector index aliases.
+2. **Keys**: tenant KMS key created (or BYOK import / HYOK external-store binding validated with a round-trip unwrap test).
+3. **Identity**: IdP federation configured (OIDC/SAML metadata exchange), SCIM endpoint issued, break-glass admin created with mandatory rotation.
+4. **Feature packs & policy bundles**: plan entitlements applied; industry pack (e.g., HIPAA, FINRA) installs default policy-as-code bundles, retention classes, and channel constraints.
+5. **Smoke verification**: an automated synthetic communication runs the full lifecycle (compose → render → secure-link delivery to a sink → view → archive) and the onboarding is marked complete only when every expected lifecycle event is observed.
+
+Offboarding reverses the flow and ends with crypto-shredding + a signed destruction certificate, with WORM-retained records handled per contractual survival clauses.
 
 ---
 

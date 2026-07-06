@@ -94,6 +94,30 @@ Acorn Communicate
 
 Routing rules: object URLs are stable and shareable across workspaces (deep link to a template opens it in the viewer's own workspace chrome with permissions applied). Every list surface supports saved views (filter+sort+columns persisted, shareable per team).
 
+### 2.2.1 Surface ownership map
+
+| Surface | Primary personas | Core objects | Notable cross-links |
+|---|---|---|---|
+| Home Dashboard | all | persona widgets | everything (drill-through) |
+| Content Library | author, designer | blocks, snippets, assets, translations | Template Designer (insert), Approvals |
+| Template Designer | designer, author | templates, versions, data contracts | Data Mapper, Accessibility Checker, Compare |
+| Journey Canvas | designer, operator | journeys, nodes, runs | Templates, Rules Builder, Analytics |
+| Rules Builder | designer, developer | decision tables, NBA policies | Journey NBA nodes, Data Mapper |
+| Data Mapper | developer, designer | contracts, schemas, mappings | Designer bindings, Developer Portal |
+| Approval Inbox / Compare | compliance | approval items, versions, decisions | Evidence Center, AI Governance |
+| Accessibility Checker | designer, compliance | findings, WCAG criteria | Designer (jump-to-element) |
+| Compliance Evidence Center | compliance, admin | proofs, attestations, exports | Archive, Approvals, Timeline |
+| AI Governance Center | compliance, admin | models, guardrails, eval runs | Prompt Management, audit log |
+| Prompt Management | developer, compliance | prompts, versions, evals | Copilot provenance cards |
+| Delivery Monitor | operator | deliveries, queues, incidents | Timeline, SLA Dashboard |
+| SLA / Cost Dashboards | operator, executive | SLOs, spend | Delivery Monitor, AI Governance |
+| Archive Search | compliance, agent | immutable records | Timeline reproduce view |
+| Analytics Workbench | all analytical roles | funnels, heatmaps, cohorts, experiments | Templates, Journeys, Timeline |
+| Customer Timeline | agent, operator | customers, events, cases | Archive, Journeys, Delivery Monitor |
+| Marketplaces (Template / Integration) | designer / developer, admin | listings, installs | Designer, Developer Portal |
+| Developer Portal | developer | keys, webhooks, event explorer | Data Mapper, Delivery Monitor |
+| Admin / Tenant Settings | admin | users, roles, brands, domains, retention | Theme builder (§7.3), AI kill-switch |
+
 ### 2.3 Left nav model
 
 The left nav renders a **persona-shaped subset** of the sitemap (see §3). It is configurable per role by admins but ships with strong defaults. Sections collapse; nav collapses to a 56px icon rail (`⌘\`). Current object context (e.g., the open template) pins a contextual sub-nav: Design · Data · Logic · Previews · Versions · Approvals · Analytics.
@@ -120,6 +144,29 @@ Progressive disclosure examples (P2):
 - **Business author in Template Designer** opens templates in *content mode*: only editable regions are active; structure is locked and visually quieted. A "designer mode" toggle appears only with the designer role.
 - **Data Mapper** shows business users friendly field names and sample values; developers flip to schema/JSONPath view with the same toggle position every time.
 - **Executive analytics** default to curated boards; the full Workbench query builder is one "Open in Workbench" away, permission permitting.
+
+### 3.1 Role-based feature visibility matrix (shipping defaults)
+
+`E` = edit/full · `R` = read · `A` = act (operate without structural edit) · `–` = hidden. Admins can tune per tenant; the matrix is stored as policy, and the UI renders from it (no hardcoded role checks in components).
+
+| Surface | Author | Designer | Compliance | Operator | Developer | Executive | CS Agent | Admin |
+|---|---|---|---|---|---|---|---|---|
+| Content Library | E | E | R | – | R | – | R | E |
+| Template Designer | E (content mode) | E (full) | R + annotate | R | R (bindings) | – | – | R |
+| Journey Canvas | R | E | R + annotate | A (pause/retry) | R | R (overlay) | – | R |
+| Rules Builder / Data Mapper | R (friendly view) | E | R | R | E | – | – | R |
+| Approval Inbox / Compare | R (own items) | R (own items) | E | – | – | – | – | R |
+| Accessibility Checker | R | E | E | – | – | R (score) | – | R |
+| Evidence / AI Governance | – | – | E | R | R | R (posture) | – | E |
+| Delivery Monitor / SLA / Cost | – | – | R | E | R | R | R (per-customer) | R |
+| Archive Search | – | – | E | R | – | – | R (scoped) | E |
+| Analytics Workbench | R (own) | R (own) | R | R | R | R (boards) | – | R |
+| Customer Timeline | – | – | R | R | R (debug view) | – | E (agent tools) | R |
+| Developer Portal / Integrations | – | – | R | R | E | – | – | E |
+| Prompt Management | – | R | E (approve) | – | E | – | – | E |
+| Admin Settings | – | – | – | – | – | – | – | E |
+
+Two UX rules keep this honest: (1) **no dead ends** — if a cross-link points to a hidden surface, the user sees a scoped read-only peek or an "request access" card, never a 403 wall; (2) **same gesture, different depth** — a toggle that reveals advanced view sits in the same position on every surface, so growing into a bigger role never means relearning the product.
 
 ---
 
@@ -179,7 +226,16 @@ The crown jewel. Figma-grade feel, enterprise-grade guardrails.
 
 All assistant output follows the global **suggestion → diff → accept** pattern (§5) and stamps the audit note automatically.
 
-**States:** autosave every 2s with visible "Saved · just now"; offline banner with local queue; conflict handling via live multiplayer cursors (designer sees collaborators; content-mode editors lock at region granularity); versions checkpoint on submit and every 30 min.
+**States:**
+
+| State | Behavior |
+|---|---|
+| Saving | Autosave every 2s, debounced; visible "Saved · just now" in title bar; never blocks input. |
+| Offline | Banner + local mutation queue; canvas stays editable; queue replays on reconnect with conflict summary if needed. |
+| Multiplayer | Live cursors + selection halos per collaborator; content-mode editors lock at region granularity; designer-mode structural edits use last-writer-wins with change toasts. |
+| Versioning | Checkpoints on submit and every 30 min; named checkpoints via `⌘⇧S`; restore opens Compare first, never silently reverts. |
+| Locked / regulated | Regulated templates show a lock rail: which regions are frozen by policy and who can unlock (deep-links to the policy). |
+| Failing checks | Submit button becomes "Submit with 2 open findings…" — allowed only if policy classifies findings as warnings; blockers list inline with jump-to-element. |
 
 **Keyboard shortcuts (excerpt):** `V` select, `T` text, `R` rectangle/container, `⌘D` duplicate, `⌘G`/`⌘⇧G` group/ungroup, `⌘⌥K` create component, `⌥←→↑↓` nudge spacing, `⌘Z/⇧⌘Z` undo/redo (AI accepts are undoable as single steps), `⌘↵` submit for approval, `?` shortcut overlay.
 
@@ -256,6 +312,19 @@ Node-based orchestration editor for multi-step, multichannel journeys.
 ### 4d. Analytics Workbench
 
 Answers "did this communication do its job?" — not just "was it opened?".
+
+```
+┌ Filters: [Last 90d ▾][Brand: Retail ▾][Channel: All ▾][Segment: + ]  [Save view]┐
+├──────────┬──────────────────────────────────────────────────────────────────────┤
+│ Funnels  │  ┌ Funnel: Q3 Statement journey ────────┐ ┌ Outcome scorecard ─────┐ │
+│ Heatmaps │  │ Sent ████████████ 128k               │ │ Intent: "pay in 7d"    │ │
+│ Cohorts  │  │ Open ████████ 84k (-34%)             │ │ Target 62% · Actual 58%│ │
+│ A/B      │  │ View ██████ 61k                      │ │ ▂▃▅▆▅▇ trend ▲         │ │
+│ Outcomes │  │ Pay  ███ 39k  ← click = cohort       │ └────────────────────────┘ │
+│ Explore  │  └──────────────────────────────────────┘ ┌ Heatmap: v14 (doc) ────┐ │
+│          │                                           │ [rendered doc + heat]  │ │
+└──────────┴───────────────────────────────────────────┴────────────────────────┴─┘
+```
 
 **Layout:** left rail of analysis types (Funnels, Heatmaps, Cohorts, A/B, Outcomes, Explore); canvas of cards; global filter bar (date, brand, channel, segment, journey/template) that persists across analysis types; every card exports (PNG/CSV) and pins to shareable boards.
 
