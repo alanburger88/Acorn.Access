@@ -368,6 +368,20 @@ Levers tracked in FinOps reviews (C.14): spot/preemptible batch pools (target 70
 - Sampling: 100% of errors and slow (>p95) traces, 5% baseline; batch jobs sampled per-chunk not per-doc.
 - **Dashboards:** RED (rate/errors/duration) per service API; USE (utilization/saturation/errors) per pool (render workers, Kafka, DB, GPU/model gateways); per-tenant overlays for the top-50 tenants; AI-specific: groundedness sampling score, token spend, guardrail trip rate, model-provider latency by route.
 - **SLO catalog with error budgets:** every SLO in B.2–B.6 has a recorded SLI query, owner team, and 28-day error budget. Multi-window multi-burn-rate alerts (2%/1h page; 5%/6h page; 10%/3d ticket). Budget exhausted → feature freeze for that service until budget recovers or an explicit exec exception is logged.
+
+**SLO catalog excerpt (full catalog lives in `slo-catalog/` repo):**
+
+| SLO ID | SLI | Objective | 28-day error budget | Owner |
+|---|---|---|---|---|
+| SLO-RND-01 | On-demand simple render p99 | < 2s | 43 min of breach | Rendering |
+| SLO-RND-02 | Batch throughput vs. plan | ≥ 95% of committed schedule | 5% of batch-hours | Pipeline |
+| SLO-DLV-01 | Email submission success | 99.95% | 0.05% of sends | Delivery |
+| SLO-VWR-01 | Viewer LCP (RUM, p75) | < 1.5s | 25% of sessions over | Viewer |
+| SLO-AI-01 | Assistant first-token p95 | < 1.5s | 43 min | AI Serving |
+| SLO-AI-02 | Groundedness (sampled prod answers) | ≥ 98% | 2% of sampled answers | AI Quality |
+| SLO-ARC-01 | Archive retrieval p99 (hot) | < 2s | 43 min | Data/Archive |
+| SLO-EVT-01 | Event E2E lag p95 | < 5s | 43 min | Pipeline |
+| SLO-API-01 | Control-plane API availability | 99.95% | 21.6 min | Platform |
 - Log policy: structured JSON, tenant ID mandatory field, **no document content or PII in logs** (enforced by log-scrubbing middleware + sampled DLP scans of the log lake); 30-day hot / 13-month cold retention.
 
 ## C.4 Alerting Philosophy & On-Call
