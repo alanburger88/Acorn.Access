@@ -580,4 +580,31 @@ Every surface ships all five states before it ships at all: **empty (first-run)*
 
 ---
 
+## Appendix A — Global keyboard map (master reference)
+
+| Scope | Keys | Action |
+|---|---|---|
+| Global | `⌘K` | Command palette |
+| Global | `/` | Global search |
+| Global | `⌘.` | Toggle AI copilot panel |
+| Global | `⌘J` | Inline AI on selection |
+| Global | `⌘\` | Collapse/expand left nav |
+| Global | `?` | Shortcut overlay |
+| Global | `g` then `h/t/j/a/c/d` | Go to Home / Templates / Journeys / Approvals / Customers / Delivery |
+| Lists | `J / K`, `↵`, `X` | Next/prev, open, select |
+| Designer | `V/T/R`, `⌘D`, `⌘G/⌘⇧G`, `⌘⌥K` | Tools, duplicate, group, componentize |
+| Designer | `1–5`, `D/⇧D`, `L`, `⇧A`, `⇧P` | Channel, device/dark, locale, a11y sim, pin preview |
+| Designer | `⌘+ / ⌘- / ⌘0`, `Space`-drag | Zoom, pan |
+| Journeys | `N`, `⌫`, `⌘E`, `⌘⇧L` | Add node, delete, edit, auto-layout |
+| Journeys | `⌘⇧S`, `⌘⇧A`, `[ / ]` | Simulate, analytics overlay, cycle versions |
+| Approvals | `J/K`, `A`, `R`, `D`, `⇧S`, `O` | Traverse, approve…, reject…, diff, request changes, onion-skin |
+| Workbench | `F`, `H`, `⌘F`, `B`, `⇧⌘E` | Funnel, heatmap, filters, pin to board, export |
+| Timeline | `/`, `E`, `⇧R`, `⌘⇧N` | Filter, expand event, reproduce view, note |
+| Everywhere | `⌘↵` | Primary commit action (submit/approve/accept) — always paired with a reason/confirm step when consequential |
+| Viewer (customer) | `⌥A`, `Tab` order = reading order | Accessibility widget; guaranteed logical focus flow |
+
+All shortcuts are remappable per user; the palette lists the current binding beside every command, so discovery never depends on memory.
+
+---
+
 *End of blueprint. Companion documents: 09-design-tokens-spec (full token tables), 10-component-api-contracts (props/ARIA per component).*

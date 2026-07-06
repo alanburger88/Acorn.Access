@@ -384,7 +384,27 @@ All proofs are signed (SEC-ENC-011), hash-chain anchored (SEC-AUD-003), exportab
 | CMP-EVD-002 | Audit-scope packs: control-level evidence (access reviews, key rotations, SoD reports, pack configuration history) generated for SOC 2/ISO/regulatory exams without engineering involvement. |
 | CMP-EVD-003 | Auditor role access (read-only, time-boxed) to a dedicated evidence workspace; every auditor view is itself audited. |
 
-## 2.9 Compliance Regression Testing (CMP-TST)
+## 2.9 Deployment-Model Responsibility Matrix (CMP-DEP)
+
+Compliance obligations shift by deployment model; the matrix below is contract-referenced and shipped with each tenant's evidence workspace.
+
+| Control domain | SaaS (T1/T2) | Dedicated (T3) | Customer VPC / hybrid (T4) |
+|---|---|---|---|
+| Physical/infra security | Acorn + cloud provider | Acorn + cloud provider | Customer |
+| Platform patching | Acorn | Acorn | Shared: Acorn supplies signed releases, customer applies (or grants managed access) |
+| Key custody | Acorn KMS / CMK / BYOK | CMK / BYOK standard | HYOK — customer exclusive |
+| Network perimeter | Acorn | Acorn | Customer |
+| IdP & user lifecycle | Customer (federated) | Customer | Customer |
+| Compliance pack configuration | Customer (Tenant Admin) | Customer | Customer |
+| Audit log custody | Acorn (streamed to customer SIEM) | Acorn + customer | Customer-resident |
+| Breach notification to regulators | Customer (Acorn notifies customer) | Customer | Customer |
+
+| ID | Requirement |
+|---|---|
+| CMP-DEP-001 | The responsibility matrix is a versioned contractual artifact; deviations are documented per tenant and reflected in that tenant's evidence packs. |
+| CMP-DEP-002 | T4 deployments receive a self-assessment toolkit (control tests, audit-chain validator, residency attestation generator) so customer-side controls produce the same evidence formats. |
+
+## 2.10 Compliance Regression Testing (CMP-TST)
 
 | ID | Requirement |
 |---|---|
