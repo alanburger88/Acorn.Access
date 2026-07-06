@@ -665,6 +665,16 @@ The viewer embeds the **Acorn.Access widget** (this repository's component) as i
 | ACC-ML-004 | Localized accessibility assets: alt text, captions, transcripts, error messages, and the Acorn.Access widget UI itself localized per supported language; machine-translated accessibility text follows the AIG-REV translation gate. |
 | ACC-ML-005 | Locale-aware read-aloud and formatting: dates, currency, and numbers rendered and voiced per locale conventions. |
 
+## 4.10 Accessibility Operations & Ownership (ACC-ORG)
+
+| ID | Requirement |
+|---|---|
+| ACC-ORG-001 | Component-library-first: designers compose from an accessibility-certified component library (every component ships with its own WCAG test evidence); raw HTML/custom components require an accessibility review before library admission. |
+| ACC-ORG-002 | Tenant accessibility dashboard: per-tenant conformance posture — templates passing/failing, open remediation debt, exception inventory with expiries, per-standard status (WCAG 2.2/2.1, PDF/UA, EN 301 549). |
+| ACC-ORG-003 | Role training: Designers and Business Authors complete in-product accessibility onboarding before publish permissions activate; the designer's inline linting doubles as continuous training (each finding links rule rationale and examples). |
+| ACC-ORG-004 | Feedback loop: recipients can report accessibility barriers directly from the viewer/widget; reports are triaged with a tracked SLA (ACC-AUD-004) and root-caused to template, platform, or widget. |
+| ACC-ORG-005 | Procurement answers: current ACR/VPAT, audit summaries, and the ACC control catalog are published to the trust portal for tenant procurement and Section 508/EN 301 549 solicitations. |
+
 ---
 
 ## Appendix A — Gate Summary (controls that block)
@@ -679,6 +689,36 @@ The viewer embeds the **Acorn.Access widget** (this repository's component) as i
 | Compliance pack regression tests | Pack/template/platform promotion | CMP-TST-001 |
 | Prompt binding, classification routing, eval thresholds, PDP coverage | AI feature promotion/execution | AIG-PRM-004, AIG-MDL-003, AIG-EVL-002, AIG-POL-002 |
 | MCP human-approval gate | Sensitive agent actions | AIG-MCP-004 |
+| AI-content labeling | Render where jurisdiction requires labels | AIG-TRN-002 |
 | Accessibility block-on-fail | Template publish / communication approval, per language, incl. media | ACC-GTE-001, ACC-MED-003, ACC-ML-001, ACC-AUD-003 |
+
+## Appendix B — Control Family Index
+
+| Prefix | Family | Section |
+|---|---|---|
+| SEC-IAM | Identity & authentication | 1.1 |
+| SEC-AZN | Authorization, ABAC, SoD | 1.2 |
+| SEC-ENC | Encryption & key management | 1.3 |
+| SEC-ISO | Tenant isolation | 1.4 |
+| SEC-SCR | Secrets management | 1.5 |
+| SEC-DOC | Secure document access | 1.6 |
+| SEC-APP | Application security | 1.7 |
+| SEC-SCM | Supply chain | 1.8 |
+| SEC-NET | Network security | 1.9 |
+| SEC-INS | Insider risk | 1.10 |
+| SEC-AUD | Audit logging & SIEM | 1.11 |
+| SEC-VUL / SEC-IRP | Vulnerability & incident management | 1.12 |
+| CMP-PCK | Compliance packs | 2.1 |
+| CMP-SOC / ISO / HIP / GLB / PCI / GDP / CPR / POP | Framework controls | 2.2 |
+| CMP-RES | Data residency | 2.3 |
+| CMP-RET | Retention, legal hold, WORM | 2.4 |
+| CMP-CNS | Consent & preference evidence | 2.5 |
+| CMP-COC | Chain of custody | 2.6 |
+| CMP-PRF | Proof artifacts | 2.7 |
+| CMP-EVD | Evidence packs | 2.8 |
+| CMP-DEP | Deployment responsibility | 2.9 |
+| CMP-TST | Compliance regression testing | 2.10 |
+| AIG-PRN … AIG-TRN | AI governance families | 3.1–3.13 |
+| ACC-STD … ACC-ORG | Accessibility families | 4.1–4.10 |
 
 *End of document.*
