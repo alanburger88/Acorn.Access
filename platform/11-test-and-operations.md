@@ -5,6 +5,12 @@
 **Owners:** Principal Quality Architecture / SRE
 **Applies to:** All deployment models (multi-region SaaS, private cloud, customer VPC) unless noted.
 
+**Contents**
+
+- **Part A — Test Strategy** (A.1–A.17): pyramids per domain, golden-output testing, data contracts, AI-generated test data, template publish harness, accessibility and compliance regression, AI evals, delivery/chaos, load, security, migration verification, gates matrix, release certification.
+- **Part B — Performance Benchmarks** (B.1–B.9): throughput, latency SLOs, viewer budgets, AI latency, archive/search/API/event targets, capacity model, cost-performance, methodology.
+- **Part C — Operational Excellence** (C.1–C.16): HA/DR, deploys, observability, alerting, incident management, 8 runbooks, chaos program, SIEM, vuln SLAs, policy/infra-as-code, backup verification, quotas, SLA/status, FinOps, operating rhythm, docs outline.
+
 ---
 
 # PART A — TEST STRATEGY
@@ -289,6 +295,19 @@ Linear scale-out verified to 1,000 workers (≥ 85% scaling efficiency). Priorit
 | Delivery-status webhook fan-out to tenant | p95 < 10s from provider callback |
 | Kafka consumer lag (steady state) | < 30s across all consumer groups; alert at 2 min (see runbook 8) |
 
+**API p99 breakdown by group:**
+
+| API group | p50 | p95 | p99 | Rate limit default (per tenant) |
+|---|---|---|---|---|
+| Documents read (metadata) | 40ms | 150ms | 400ms | 200 RPS |
+| Documents read (content bytes) | 120ms | 600ms | 1.5s | 100 RPS |
+| Ingestion submit (async ack) | 80ms | 400ms | 3s | 50 RPS + 500 GB/day |
+| Render (sync, simple) | 250ms | 900ms | 2s | 20 RPS |
+| Delivery submit | 60ms | 300ms | 800ms | 100 RPS |
+| Search | 90ms | 350ms | 1.2s | 30 RPS |
+| Journeys/config CRUD | 50ms | 200ms | 400ms | 20 RPS |
+| Webhook mgmt / admin | 50ms | 200ms | 400ms | 10 RPS |
+
 ## B.7 Capacity Planning Model
 
 Per-tenant sizing formula (region capacity = Σ tenants × peak factors):
@@ -390,6 +409,16 @@ Levers tracked in FinOps reviews (C.14): spot/preemptible batch pools (target 70
 - Alert hygiene: weekly review; any alert that fired > 3× in a week without action is deleted or fixed. Target < 2 pages per shift-week; sustained breach triggers reliability investment.
 - On-call: per-domain rotations (Serving, Pipeline/Batch, Delivery, AI, Data/Archive) + an Incident Commander rotation; follow-the-sun across US/EU/APAC hubs, 1-week shifts, secondary escalation at 5 min unacked. On-call is compensated; postmortem action items get 20% sprint reservation.
 
+**Escalation ladder:**
+
+| Step | Trigger | Who |
+|---|---|---|
+| L1 | Page fired | Domain primary on-call (ack ≤ 5 min) |
+| L2 | Unacked 5 min, or primary requests | Domain secondary + team lead |
+| L3 | SEV-1/2 declared, or 30 min without mitigation path | Incident Commander rotation + adjacent domain on-calls as needed |
+| L4 | SEV-1, or customer-exec attention, or > 2h SEV-2 | Director on-call + comms lead; security incidents add CISO on-call |
+| L5 | Confirmed data exposure, regulatory clock started | CTO + General Counsel |
+
 ## C.5 Incident Management
 
 **Severity matrix:**
@@ -401,10 +430,16 @@ Levers tracked in FinOps reviews (C.14): spot/preemptible batch pools (target 70
 | SEV-3 | Degraded performance within failover; single-tenant functional issue | Owning team, business hours+ | Ticket comms |
 | SEV-4 | Cosmetic/minor, no SLO impact | Backlog | None |
 
-- **Comms templates** pre-approved by legal for: security incident (with/without confirmed exposure), delivery incident (incl. "documents may arrive delayed/duplicated" wording), print-SLA miss, AI-behavior incident. Stored in the incident tool, filled by IC, reviewed by comms lead for SEV-1/2.
+- **Comms templates** pre-approved by legal for: security incident (with/without confirmed exposure), delivery incident (incl. "documents may arrive delayed/duplicated" wording), print-SLA miss, AI-behavior incident. Stored in the incident tool, filled by IC, reviewed by comms lead for SEV-1/2. Skeleton (status-page variant):
+
+  > **[Investigating | Identified | Monitoring | Resolved]** — Since {UTC start}, {component} is {impact in customer terms — e.g., "email deliveries are delayed up to 20 minutes; no messages are lost"}. Affected: {regions/channels/tenant scope}. Not affected: {explicit negatives — the most-read line}. Workaround: {if any}. Next update by {UTC + 30/60 min}.
+
+- Internal incident channel discipline: single thread of truth, timestamped mitigation log (feeds the postmortem timeline automatically), roles pinned (IC, ops lead, comms lead, scribe), decisions recorded as `DECISION:` lines.
 - **Postmortems:** blameless, required for SEV-1/2 and any SEV-3 with novel failure mode; due in 5 business days; template = timeline, contributing factors (≥ 3 whys), what-went-well, action items with owners/dates. SEV-1 postmortems reviewed at monthly ops review; action-item completion tracked with 30/60/90-day SLAs.
 
 ## C.6 Runbook Library — 8 Core Runbooks
+
+**Runbook standards:** every runbook states detection signal(s) and the dashboard link, a decision tree ordered by likelihood × blast radius, exact commands/flags (copy-pasteable), the escalation point ("stop self-serving and page X when…"), tenant-comms guidance, and explicit exit criteria. Runbooks are tested: each is executed for real during chaos drills (C.7) at least annually, and any incident where a runbook was wrong or missing generates a runbook PR as a mandatory postmortem action. Self-hosted operator variants ship in the docs (C.16 §8).
 
 **RB-01: Batch render job stuck / degraded**
 1. Confirm: job dashboard — throughput vs. plan, checkpoint age, worker error rate. Distinguish *stuck* (checkpoint age > 15 min) vs. *slow* (throughput < 70% plan).
@@ -464,6 +499,20 @@ Levers tracked in FinOps reviews (C.14): spot/preemptible batch pools (target 70
 5. Impact comms: journey timers and NBA freshness degrade with lag — auto-banner in tenant console when lag > 5 min ("event processing delayed"). Deliveries already submitted are unaffected; state that explicitly.
 6. Exit: lag < 30s for 30 min; verify no journey double-fires (idempotent journey steps assert this) and reconcile event counts vs. producer offsets.
 
+## C.7 Chaos Engineering Program
+
+Continuous, not annual theater. All experiments run first in `perf`, then graduate to production game hours (announced windows, blast-radius capped to ≤ 5% of traffic, auto-abort on SLO burn).
+
+| Experiment class | Examples | Cadence |
+|---|---|---|
+| Dependency failure | Kill a delivery provider, model provider, object-store AZ; inject 500s/latency into internal service meshes | Weekly automated in `perf`; monthly in prod game hours |
+| Resource pressure | Render-worker OOM storms, disk-full on Kafka brokers, connection-pool exhaustion | Monthly |
+| Data anomalies | Poison documents in batch, malformed provider webhooks, clock skew ±5 min | Monthly |
+| Zone/region | AZ blackhole; full region evacuation (= DR game days, C.1) | Quarterly |
+| Human/process | "The one engineer who knows X is unreachable" drills — runbook must suffice | Per new runbook + annually |
+
+Every experiment has a hypothesis, an abort condition, and a finding ticket; a hypothesis that holds three consecutive runs gets automated as a permanent regression check. Chaos findings feed runbook updates (C.6) and the alerting review (C.4).
+
 ## C.8 SIEM Integration & Security Monitoring
 
 - All authn/authz decisions, admin actions, data exports, template publishes, model-config changes, and archive access emit CEF/OCSF events to the SIEM (SaaS: our Chronicle/Sentinel instance; VPC deployments: customer's SIEM via syslog/HTTPS forwarder, documented event schema).
@@ -514,7 +563,29 @@ Weekly vuln review; SLA breaches auto-escalate to service owner's director. Base
 - Unit-economics review monthly against B.8 targets; regressions get an engineering owner.
 - Efficiency automation: idle-pool reaper, spot orchestration for batch (fallback to on-demand at deadline risk — integrates with RB-07 math), storage-tiering jobs, prompt/model routing reports (tokens per answer trend).
 
-## C.15 Developer Documentation Outline (docs.acorn-communicate.com)
+**Standing FinOps dashboards:**
+
+| Dashboard | Key panels | Audience |
+|---|---|---|
+| Unit economics | Cost per 1k renders/deliveries/conversations vs. B.8 targets, trend per release | Eng leadership, finance |
+| Tenant margin | Per-tenant COGS vs. revenue, top-10 negative-margin tenants | Finance, account teams |
+| AI spend | Tokens by tenant/capability/model route, cache-hit rate, budget burn | AI platform, FinOps |
+| Waste | Idle capacity, orphaned volumes/snapshots, over-provisioned pools, off-peak batch shift opportunities | SRE |
+| Anomalies | Open spend anomalies with attribution and owner | FinOps on-call |
+
+## C.15 Operating Rhythm
+
+| Cadence | Ritual | Inputs / outputs |
+|---|---|---|
+| Weekly | Ops review per domain | Pages, SLO burn, alert hygiene, vuln SLA status → actions |
+| Weekly | Release-train go/no-go | A.17 checklist status |
+| Monthly | SEV-1/2 postmortem review + action-item audit | Overdue items escalate to directors |
+| Monthly | Chaos & failover results review | Experiment findings → runbook/alert PRs |
+| Quarterly | Capacity & DR game-day review | B.7 reforecast, GD-1…GD-6 results, RTO/RPO scorecard |
+| Quarterly | SLO recalibration | Tighten/retire SLOs against tenant expectations and cost |
+| Quarterly | FinOps deep-dive | B.8 target review, tenant-margin actions |
+
+## C.16 Developer Documentation Outline (docs.acorn-communicate.com)
 
 1. **Getting Started** — 15-minute quickstart (ingest a CSV → render a statement → deliver via email sandbox → view in portal); environment setup; auth (API keys, OAuth, service principals); Postman/Insomnia collections; sample tenant with seeded data.
 2. **Concepts** — architecture overview; tenancy & data residency; canonical data model; templates & versioning; rendering pipeline & output formats; delivery orchestration & fallback; journeys & events; interactive documents & embedded actions; the grounded assistant (how grounding, citations, and guardrails work); NBA; archive & retention model; deployment models (SaaS / private cloud / VPC).
@@ -527,4 +598,4 @@ Weekly vuln review; SLA breaches auto-escalate to service owner's director. Base
 
 ---
 
-*End of document. Companion docs: 09-security-architecture.md (threat model detail), 10-compliance-framework.md (control catalog referenced by A.14).*
+*End of document. Companion doc: 06-security-compliance-governance.md (threat model and control catalog referenced by A.13/A.15).*

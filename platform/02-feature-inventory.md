@@ -465,4 +465,4 @@ Conventions: Pillar = CCM / CXM / IXM / AIXM (primary pillar; many features serv
 
 ---
 
-**Inventory totals:** 18 domains, 276 features (P0: 152, P1: 96, P2: 28; MVP: 133, GA: 12, ENT: 131 — features marked "MVP/ENT" ship a defined MVP slice and deepen in ENT and are counted once, under MVP).
+**Inventory totals:** 18 domains, 364 features (P0: 236, P1: 113, P2: 15; MVP: 217, GA: 12, ENT: 135 — features marked "MVP/ENT" ship a defined MVP slice, deepen in ENT, and are counted once, under MVP).

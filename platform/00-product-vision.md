@@ -163,7 +163,69 @@ The platform is where regulated enterprises *operate* their customer communicati
 
 ---
 
-## 10. What we will not do
+## 10. Competitive positioning
+
+Acorn Communicate competes by refusing the category boundaries incumbents defend. Positioning per competitor:
+
+| Competitor | Their strength | Their structural gap | Our wedge |
+|---|---|---|---|
+| Quadient (Inspire) | Deep composition, print heritage, large installed base | Interactive experience and AI are adjunct modules on a designer-file architecture; outcomes unmeasured | AI migration factory off Inspire; outcome dashboards their buyers cannot produce |
+| OpenText (Exstream) | High-volume batch scale, enterprise contracts | Aging authoring experience; innovation gravity pulled toward the broader OT portfolio | Designer usability + business-user self-service; time-to-communication in days not quarters |
+| Smart Communications | Cloud-native composition, "conversations" narrative | Thin interactive layer; assistant/actions/outcomes not closed-loop; archive and print depth outsourced | Full IXM loop (assistant + payments + disputes + e-sign) inside the communication |
+| Messagepoint | Content intelligence (Rationalizer), migration analytics | Content layer only — depends on others to render, deliver, and measure | Same rationalization intelligence plus the entire downstream stack it feeds |
+| Precisely EngageOne | Video and interactive add-ons, data quality heritage | Fragmented product family; no unified content model or outcome fabric | One platform replacing three EngageOne SKUs with one governed content model |
+| Adobe AEM Forms | Forms, marketing-cloud adjacency, designer brand | Marketing-stack DNA; weak regulated-communication governance, print, and archive | Compliance-grade lifecycle (evidence packs, WORM, clause governance) Adobe does not attempt |
+| Doxim / Broadridge / Fiserv / CSG | Vertical statement processing at scale, service bureaus | Service-bureau economics; product innovation slow; tenant lock-in via operations not capability | White-label our platform to their competitors (PSPs); or partner as their modernization layer |
+| MHC | Mid-market ECM + CCM bundle | Neither best-of-breed composition nor experience | Outgrow-path: land where MHC caps out, at mid-market pricing |
+
+**The durable moat** is none of these point advantages alone; it is the unified spine (Section 4) plus accumulated per-tenant outcome data that makes every pillar smarter and every renewal defensible.
+
+---
+
+## 11. How the pillars work together: one renewal, end to end
+
+A concrete walkthrough — an auto-insurance renewal with a 12% premium increase — shows why unification beats integration:
+
+1. **Ingest (CCM/AIXM).** The policy admin system emits an ACORD renewal record. Ingestion validates it, flags the premium delta, matches the identity, confirms the mailing address via the USPS API, and notes the customer's consent state: email permitted, SMS not.
+2. **Compose (CCM).** The renewal template — intended outcome: `renewed`, success window: 30 days — assembles from governed content objects. The rate-increase explanation clause version effective for the policy's state is selected automatically. AI compliance review confirms the state-mandated notice period language is present; the accessibility gate passes; the communication renders as interactive HTML5 with a PDF/UA fallback.
+3. **Orchestrate (CXM).** The renewal journey sends a secure link by email. Quiet hours defer dispatch to 8 a.m. local. The customer doesn't open it in 7 days; the failover ladder sends the print rendition — same template version — to production with presorted postage.
+4. **Interact (IXM).** The customer opens the print piece's QR code on a phone. After OTP authentication, the viewer opens with a personalized summary: "Your premium increased $14/month, mostly due to your state's rate filing. Here are two ways to lower it." Acorn.Access lets them bump the text size. They ask the assistant, "Why did my rate go up if I had no claims?" The assistant answers from the approved rate-filing explanation content — with citations — and, when asked whether they should drop collision coverage, declines to advise and offers a licensed-agent callback.
+5. **Act (IXM/CXM).** NBA features "review discount eligibility" (telematics opt-in) above "renew now" because the propensity model predicts churn risk; a business rule suppresses the paperless nudge (already enrolled). The customer applies the discount, sees the revised premium, renews, and pays — all inside the communication.
+6. **Prove and learn (CCM/AIXM).** The archive holds the statement of record: content, versions, approvals, delivery ledger, access proof, assistant transcript, payment confirmation. The outcome dashboard credits a `renewed` outcome in 9 days, one call avoided. Analytics shows 40% of assistant questions on this template concern the rate filing — the CMS flags the explanation clause for revision, and the loop closes.
+
+Every step above requires two to four vendors and a systems-integration project in the incumbent world. Here it is one data model and one audit trail.
+
+---
+
+## 12. Platform design principles
+
+1. **Outcome before output.** Any feature that increases production volume without a path to outcome measurement is deprioritized by default.
+2. **Governance is a feature, not a tax.** Approvals, gates, and evidence must be faster than the ungoverned alternative, or users route around them.
+3. **One content model, many projections.** Never duplicate content per channel; duplication is the root defect of legacy CCM.
+4. **AI proposes, humans dispose — until proven.** Autonomy is earned per task class with measured error rates, never assumed.
+5. **Grounded or silent.** Customer-facing AI cites its sources or says it cannot answer. There is no third mode.
+6. **Accessible and multilingual by construction.** Both are properties of the pipeline, gated at publication — not per-document services.
+7. **Print is a channel, not a legacy.** Digital-first, paper-guaranteed.
+8. **Everything reproducible, everything attributable.** If we cannot prove it later, we do not ship it now.
+9. **API-first, UI-second.** Every capability exists headlessly before it gets a screen; the UI is a client of the same APIs partners use.
+10. **Tenant data is the tenant's.** No training without opt-in, no cross-tenant leakage, no dark patterns around consent.
+
+---
+
+## 13. Risks and mitigations
+
+| Risk | Impact | Mitigation |
+|---|---|---|
+| Assistant error on regulated content | Regulatory exposure; category-defining bad press | Grounding-only architecture, hallucination detection, refusal-and-escalate default, red-team suite as a release gate, zero-incident guardrail metric |
+| Migration cost stalls incumbent replacement | Long sales cycles, POC purgatory | AI migration factory as a funded program with per-template conversion SLAs; land on new communications first, migrate portfolio second |
+| Print/output parity gap in year 1 | Blocked in full-replacement RFPs | PSP partnerships bridge AFP-class production until ENT; be explicit in sales motion about MVP vs ENT scope |
+| Incumbents bundle "AI parsley" cheaply | Feature-checklist parity confusion | Sell the outcome loop and evidence pack — demonstrable in a 2-hour POC, structurally hard to retrofit |
+| Compliance posture lag (HITRUST/FedRAMP) | Locked out of health/government segments | Certification roadmap staffed from day one; dedicated-cell architecture designed in MVP even if sold in ENT |
+| Outcome attribution disputes ("did we cause the payment?") | North-star credibility | Conservative attribution windows, holdout experiments, transparent methodology published to tenants |
+
+---
+
+## 14. What we will not do
 
 - We will not build a marketing automation suite. We orchestrate regulated, transactional and servicing communications; we integrate with marketing clouds rather than replace them.
 - We will not ship ungoverned AI. No customer-facing generation without grounding, citation, confidence scoring, and human gates on regulated content.
