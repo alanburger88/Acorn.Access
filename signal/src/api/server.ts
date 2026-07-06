@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { AccessDenied, requireScope, requireTenant, type Principal } from '../agents/access.js';
 import { GrantError, type AgentRegistration, type Scope } from '../agents/grants.js';
 import { IngestError, type RawCommunication } from '../ingest/normalize.js';
+import { CONSOLE_HTML } from '../console/page.js';
 import type { SignalService } from '../service.js';
 
 export interface ApiOptions {
@@ -22,10 +23,12 @@ interface JsonError {
  * Minimal dependency-free HTTP API over the SignalService.
  *
  * Routes:
+ *   GET  /            (demo console, text/html)
  *   GET  /v1/health
  *   POST /v1/agents                                            (admin)
  *   POST /v1/agents/{agentId}/tokens                           (admin)
  *   POST /v1/communications                                    (communications:ingest)
+ *   GET  /v1/tenants/{t}/packets                               (packets:read)
  *   GET  /v1/tenants/{t}/packets/{id}                          (packets:read)
  *   GET  /v1/tenants/{t}/packets/{id}/verify                   (packets:verify)
  *   GET  /v1/tenants/{t}/audit                                 (packets:verify)
@@ -48,6 +51,10 @@ export function createApiServer(service: SignalService, options: ApiOptions): Se
     const method = req.method ?? 'GET';
 
     try {
+      if (method === 'GET' && (url.pathname === '/' || url.pathname === '/console')) {
+        return sendHtml(res, CONSOLE_HTML);
+      }
+
       if (method === 'GET' && url.pathname === '/v1/health') {
         return sendJson(res, 200, { status: 'ok', pipeline: service.pipelineVersion });
       }
@@ -77,6 +84,12 @@ export function createApiServer(service: SignalService, options: ApiOptions): Se
 
       if (parts[0] === 'v1' && parts[1] === 'tenants' && parts.length >= 3) {
         const tenantId = parts[2]!;
+
+        if (method === 'GET' && parts[3] === 'packets' && parts.length === 4) {
+          const principal = authenticate(req);
+          const packets = await service.listPackets(principal, tenantId);
+          return sendJson(res, 200, { packets });
+        }
 
         if (method === 'GET' && parts[3] === 'audit' && parts.length === 4) {
           const principal = authenticate(req);
@@ -152,6 +165,15 @@ function statusFor(err: unknown): number {
   if (err instanceof RangeError) return 400;
   if (err instanceof SyntaxError) return 400;
   return 500;
+}
+
+function sendHtml(res: ServerResponse, html: string): void {
+  res.writeHead(200, {
+    'content-type': 'text/html; charset=utf-8',
+    'content-length': Buffer.byteLength(html),
+    'cache-control': 'no-store',
+  });
+  res.end(html);
 }
 
 function sendJson(res: ServerResponse, status: number, body: object | JsonError): void {

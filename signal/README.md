@@ -13,11 +13,20 @@ npm test          # 49 tests: canonicalization, crypto, ledger, pipeline, access
 npm run build     # emits dist/
 ```
 
-Run the API:
+Run the API and demo console:
 
 ```bash
-ACORN_SIGNAL_ADMIN_KEY=dev-admin npm start   # listens on :8787
+npm run build
+ACORN_SIGNAL_ADMIN_KEY=dev-admin node dist/cli.js serve   # listens on :8787
 ```
+
+Then open **http://localhost:8787/** — the built-in demo console. Enter the admin
+key (`dev-admin`), click **Bootstrap** to register three demo actors (ingest
+connector, complaint-confined AI triage bot, human operator), and ingest one of
+the sample messages. You can inspect the signed packet as either principal
+(the bot sees `[redacted]` PII and is denied non-complaint packets), complete
+outcome actions, run cryptographic verification, and audit the hash chain —
+all against the real API.
 
 ## Embedding the service
 
@@ -87,7 +96,9 @@ Completed actions are attributed on-chain as `agent:triage-bot` or `human:<id>`,
 
 | Method & path | Auth |
 | --- | --- |
+| `GET /` | none (demo console, HTML) |
 | `GET /v1/health` | none |
+| `GET /v1/tenants/{t}/packets` | Bearer, `packets:read` (non-PII summaries) |
 | `POST /v1/agents` | `x-admin-key` |
 | `POST /v1/agents/{id}/tokens` | `x-admin-key` |
 | `POST /v1/communications` | Bearer, `communications:ingest` |

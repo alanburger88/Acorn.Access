@@ -21,6 +21,7 @@ if (command === 'serve') {
   const server = createApiServer(service, { adminKey });
   server.listen(port, () => {
     console.log(`[acorn.signal] API listening on http://localhost:${port}`);
+    console.log(`[acorn.signal] demo console:  http://localhost:${port}/`);
     console.log(`[acorn.signal] signing key id: ${service.signer.keyId}`);
   });
 } else {

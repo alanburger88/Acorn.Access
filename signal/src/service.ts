@@ -7,7 +7,29 @@ import { MemoryPacketStore, type PacketStore } from './ledger/store.js';
 import { RuleClassifier, type Classifier } from './pipeline/classify.js';
 import { runPipeline, PIPELINE_VERSION, type PipelineContext } from './pipeline/pipeline.js';
 import { generateSignerKeys, PacketSigner, type SignerKeys } from './crypto/signer.js';
-import type { OutcomePacket, OutcomePacketPayload, VerificationResult } from './types.js';
+import type {
+  Channel,
+  Direction,
+  OutcomePacket,
+  OutcomePacketPayload,
+  OutcomeStatus,
+  RegulatedCategory,
+  VerificationResult,
+} from './types.js';
+
+/** Non-PII packet summary used by chain listings. */
+export interface PacketSummary {
+  id: string;
+  sequence: number;
+  createdAt: string;
+  channel: Channel;
+  direction: Direction;
+  category: RegulatedCategory;
+  status: OutcomeStatus;
+  amends: string | null;
+  payloadHash: string;
+  previousPacketHash: string | null;
+}
 
 export interface SignalServiceOptions {
   store?: PacketStore;
@@ -71,6 +93,33 @@ export class SignalService {
     const packet = await this.ledger.latest(tenantId, packetId);
     if (!packet) return undefined;
     return viewPacket(principal, packet);
+  }
+
+  /**
+   * Non-PII chain listing for consoles and dashboards. Requires packets:read;
+   * packets outside an AI agent's approved categories are omitted entirely.
+   */
+  async listPackets(principal: Principal, tenantId: string): Promise<PacketSummary[]> {
+    requireScope(principal, 'packets:read');
+    requireTenant(principal, tenantId);
+    const all = await this.ledger.list(tenantId);
+    const allowed = principal.agent.allowedCategories;
+    return all
+      .filter(
+        (p) => allowed.length === 0 || allowed.includes(p.payload.classification.category),
+      )
+      .map((p) => ({
+        id: p.payload.id,
+        sequence: p.integrity.sequence,
+        createdAt: p.payload.createdAt,
+        channel: p.payload.communication.channel,
+        direction: p.payload.communication.direction,
+        category: p.payload.classification.category,
+        status: p.payload.outcome.status,
+        amends: p.payload.amends ?? null,
+        payloadHash: p.integrity.payloadHash,
+        previousPacketHash: p.integrity.previousPacketHash,
+      }));
   }
 
   async verifyPacket(

@@ -44,6 +44,15 @@ describe('Acorn.Signal API end-to-end', () => {
   let operatorToken: string;
   let packetId: string;
 
+  it('serves the demo console at / without auth', async () => {
+    const res = await fetch(`${base}/`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-type')).toContain('text/html');
+    const html = await res.text();
+    expect(html).toContain('Acorn');
+    expect(html).toContain('Demo Console');
+  });
+
   it('reports health without auth', async () => {
     const { status, json } = await api('GET', '/v1/health');
     expect(status).toBe(200);
@@ -186,6 +195,32 @@ describe('Acorn.Signal API end-to-end', () => {
       authorization: `Bearer ${botToken}`,
     });
     expect(audit.json.audit).toEqual({ valid: true, packetCount: 3, brokenAt: [] });
+  });
+
+  it('lists the chain, hiding categories an agent is not approved for', async () => {
+    // Add a cancellation packet; triage-bot is confined to complaints.
+    await api(
+      'POST',
+      '/v1/communications',
+      rawComplaint({ subject: 'cancel', content: 'Please cancel my subscription today.' }),
+      { authorization: `Bearer ${ingestToken}` },
+    );
+
+    const operator = await api('GET', '/v1/tenants/tenant-a/packets', undefined, {
+      authorization: `Bearer ${operatorToken}`,
+    });
+    expect(operator.status).toBe(200);
+    const categories = operator.json.packets.map((p: any) => p.category);
+    expect(categories).toContain('cancellation');
+    expect(operator.json.packets.length).toBe(4); // original + 2 amendments + cancellation
+    // Summaries carry no PII fields.
+    expect(JSON.stringify(operator.json)).not.toContain('Jamie Doe');
+
+    const bot = await api('GET', '/v1/tenants/tenant-a/packets', undefined, {
+      authorization: `Bearer ${botToken}`,
+    });
+    expect(bot.json.packets.every((p: any) => p.category === 'complaint')).toBe(true);
+    expect(bot.json.packets.length).toBe(3);
   });
 
   it('rejects unauthenticated and cross-tenant access', async () => {

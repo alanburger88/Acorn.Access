@@ -46,5 +46,5 @@ export {
   REDACTED,
   type Principal,
 } from './agents/access.js';
-export { SignalService, type SignalServiceOptions } from './service.js';
+export { SignalService, type SignalServiceOptions, type PacketSummary } from './service.js';
 export { createApiServer, type ApiOptions } from './api/server.js';
