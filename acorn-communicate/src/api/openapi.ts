@@ -122,6 +122,9 @@ export function buildOpenApiDocument(ctx: PlatformContext): Dict {
       { name: 'experiments', description: 'A/B experiments over template versions' },
       { name: 'usage', description: 'Usage metering and estimated cost (FinOps)' },
       { name: 'ai', description: 'AI authoring drafts (human approval required)' },
+      { name: 'migration', description: 'Migration Studio: legacy ingestion, rationalization, parallel-run' },
+      { name: 'agent-desk', description: 'Contact-center assist (audited on-behalf actions)' },
+      { name: 'lifecycle', description: 'Retention sweeps and GDPR erasure' },
       { name: 'viewer (public)', description: 'Secure-link viewer (token-authorized, no API key)' },
       { name: 'meta', description: 'Service metadata' },
     ],
@@ -692,6 +695,86 @@ export function buildOpenApiDocument(ctx: PlatformContext): Dict {
       },
       '/v1/usage/periods': {
         get: op({ tag: 'usage', summary: 'List periods with recorded usage' }),
+      },
+      // -- migration studio --------------------------------------------------
+      '/v1/migration/jobs': {
+        post: op({
+          tag: 'migration',
+          summary: 'Ingest a legacy communication (HTML/text) into a draft template',
+          requestSchema: {
+            type: 'object',
+            required: ['name', 'sourceFormat', 'payload'],
+            properties: {
+              name: { type: 'string' },
+              sourceFormat: { type: 'string', enum: ['html', 'text'] },
+              payload: { type: 'string' },
+              brandId: { type: 'string' },
+            },
+          },
+        }),
+        get: op({ tag: 'migration', summary: 'List migration jobs' }),
+      },
+      '/v1/migration/jobs/{id}': {
+        get: op({ tag: 'migration', summary: 'Get a migration job', parameters: [idParam] }),
+      },
+      '/v1/migration/duplicate-report': {
+        get: op({ tag: 'migration', summary: 'Near-duplicate content pairs for rationalization (?threshold=)' }),
+      },
+      '/v1/migration/parallel-run': {
+        post: op({
+          tag: 'migration',
+          summary: 'Diff the rendered output of two template versions with the same data',
+          requestSchema: {
+            type: 'object',
+            required: ['versionAId', 'versionBId'],
+            properties: {
+              versionAId: { type: 'string' },
+              versionBId: { type: 'string' },
+              data: { type: 'object' },
+            },
+          },
+        }),
+      },
+      // -- agent desk ---------------------------------------------------------
+      '/v1/agent/customers': {
+        get: op({ tag: 'agent-desk', summary: 'Search customers (?q=), service-agent roles only' }),
+      },
+      '/v1/agent/customers/{id}/overview': {
+        get: op({ tag: 'agent-desk', summary: 'Customer overview (audited)', parameters: [idParam] }),
+      },
+      '/v1/agent/communications/{id}/resend': {
+        post: op({
+          tag: 'agent-desk',
+          summary: 'Re-deliver a communication on behalf of the customer (audited)',
+          parameters: [idParam],
+          requestSchema: { type: 'object', properties: { channels: { type: 'array', items: { type: 'string' } } } },
+        }),
+      },
+      '/v1/agent/communications/{id}/reissue-link': {
+        post: op({ tag: 'agent-desk', summary: 'Revoke live links and issue a fresh secure link (audited)', parameters: [idParam] }),
+      },
+      '/v1/agent/customers/{id}/notes': {
+        post: op({
+          tag: 'agent-desk',
+          summary: 'Attach a service note to the customer timeline (audited)',
+          parameters: [idParam],
+          requestSchema: { type: 'object', required: ['note'], properties: { note: { type: 'string' } } },
+        }),
+      },
+      // -- lifecycle ----------------------------------------------------------
+      '/v1/lifecycle/sweep': {
+        post: op({ tag: 'lifecycle', summary: 'Run the housekeeping sweep (expired links, retention-due)' }),
+      },
+      '/v1/lifecycle/retention-due': {
+        get: op({ tag: 'lifecycle', summary: 'Count archive records past their retention class' }),
+      },
+      '/v1/customers/{id}/erase': {
+        post: op({
+          tag: 'lifecycle',
+          summary: 'GDPR/CCPA erasure (blocked by legal hold; compliance roles only)',
+          parameters: [idParam],
+          requestSchema: { type: 'object', required: ['reason'], properties: { reason: { type: 'string' } } },
+        }),
       },
       // -- ai ---------------------------------------------------------------
       '/v1/ai/draft': {

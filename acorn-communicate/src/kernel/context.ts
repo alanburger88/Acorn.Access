@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import { EventBus, EventLog, makeEvent, type PlatformEvent } from './events.js';
 import { ObjectStore, Store } from './storage.js';
 import type {
+  AgentDeskService,
   AiGateway,
   AnalyticsService,
   ArchiveService,
@@ -11,6 +12,8 @@ import type {
   ExperimentService,
   IngestionService,
   JourneyService,
+  LifecycleService,
+  MigrationService,
   NbaService,
   PrintService,
   TranslationService,
@@ -66,6 +69,9 @@ export interface PlatformServices {
   translations: TranslationService;
   experiments: ExperimentService;
   usage: UsageService;
+  migration: MigrationService;
+  agentDesk: AgentDeskService;
+  lifecycle: LifecycleService;
 }
 
 export interface PlatformContext {

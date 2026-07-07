@@ -399,6 +399,25 @@ async function main() {
   // --- print batch over the two delivered statements
   const batch = await print.createBatch(admin, { communicationIds: [comAda.id, comBen.id] });
 
+  // --- Migration Studio demo: ingest a legacy HTML statement
+  const migrationJob = await ctx.services.migration.ingestLegacy(author, {
+    name: 'Legacy Savings Statement',
+    sourceFormat: 'html',
+    brandId: brand.id,
+    payload: `<html><body>
+      <h1>Savings Account Statement</h1>
+      <h2>Summary</h2>
+      <p>Your closing balance is $4,821.77 as of 2026-06-30. Interest earned this period: $12.04.</p>
+      <h2>Activity</h2>
+      <table><tr><th>Date</th><th>Description</th><th>Amount</th></tr>
+      <tr><td>2026-06-05</td><td>Deposit</td><td>$500.00</td></tr>
+      <tr><td>2026-06-19</td><td>Withdrawal</td><td>$120.00</td></tr></table>
+      <h2>Your Billing Rights</h2>
+      <p>If you think there is an error on your statement, write to us within 60 days after the error appeared.
+      We will acknowledge your letter within 30 days and resolve the inquiry within 90 days.</p>
+    </body></html>`,
+  });
+
   const linkAda = ctx.services.delivery.getSecureLink(tenant.id, comAda.id);
   const linkBen = ctx.services.delivery.getSecureLink(tenant.id, comBen.id);
 
@@ -416,6 +435,12 @@ async function main() {
   const linkDiego = ctx.services.delivery.getSecureLink(tenant.id, comDiego.id);
   console.log(`  Diego (es-MX):    ${config.baseUrl}/view/${linkDiego?.token}  (Spanish disclosure)`);
   console.log(`  designer:         ${config.baseUrl}/designer`);
+  console.log(`  agent desk:       ${config.baseUrl}/agent`);
+  console.log(
+    `  migration job:    ${migrationJob.id} (complexity ${migrationJob.complexityScore}, ` +
+      `${migrationJob.extracted.variables.length} variables, ` +
+      `${migrationJob.extracted.contentCandidates.filter((c) => c.similarTo).length} content match(es))`,
+  );
   const bill = usage.summary(tenant.id);
   console.log(`  usage this month: $${bill.estimatedCostUsd} across ${Object.keys(bill.metrics).length} metrics`);
   console.log('──────────────────────────────────────────────────────');

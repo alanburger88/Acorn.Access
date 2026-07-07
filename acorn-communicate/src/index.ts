@@ -10,6 +10,12 @@ setInterval(() => {
   ctx.services.journeys.tick().catch((err) => app.log.error(err, 'journey tick failed'));
 }, 5000).unref();
 
+// Lifecycle housekeeping: expired-link revocation and retention checks
+// (production: durable scheduled jobs per platform/11).
+setInterval(() => {
+  ctx.services.lifecycle.sweep().catch((err) => app.log.error(err, 'lifecycle sweep failed'));
+}, 60_000).unref();
+
 app
   .listen({ port: config.port, host: '0.0.0.0' })
   .then(() => {

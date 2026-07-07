@@ -24,6 +24,9 @@ import { registerAiRoutes } from './api/ai.js';
 import { createTranslationService, registerTranslationRoutes } from './domains/translations/index.js';
 import { createExperimentService, registerExperimentRoutes } from './domains/experiments/index.js';
 import { createUsageService, registerUsageRoutes } from './domains/usage/index.js';
+import { createMigrationService, registerMigrationRoutes } from './domains/migration/index.js';
+import { createAgentDeskService, registerAgentDeskRoutes } from './domains/agent-desk/index.js';
+import { createLifecycleService, registerLifecycleRoutes } from './domains/lifecycle/index.js';
 
 /**
  * Wire every bounded context into the shared context. Order matters only for
@@ -49,6 +52,9 @@ export function wireServices(ctx: PlatformContext): void {
   ctx.services.translations = createTranslationService(ctx);
   ctx.services.experiments = createExperimentService(ctx);
   ctx.services.usage = createUsageService(ctx);
+  ctx.services.migration = createMigrationService(ctx);
+  ctx.services.agentDesk = createAgentDeskService(ctx);
+  ctx.services.lifecycle = createLifecycleService(ctx);
 }
 
 export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): void {
@@ -72,4 +78,7 @@ export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): v
   registerTranslationRoutes(app, ctx);
   registerExperimentRoutes(app, ctx);
   registerUsageRoutes(app, ctx);
+  registerMigrationRoutes(app, ctx);
+  registerAgentDeskRoutes(app, ctx);
+  registerLifecycleRoutes(app, ctx);
 }

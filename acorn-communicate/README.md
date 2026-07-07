@@ -56,6 +56,9 @@ npm run build    # strict typecheck
 | `experiments` | A/B testing: weighted variants with **deterministic customer assignment**, accessibility-gated variants, per-variant outcome results, conclude-with-winner |
 | `usage` | FinOps: event-driven usage metering with reference unit rates and estimated cost, per-key **API rate limiting** (429 + RateLimit headers), console Usage tab |
 | `designer` | **Visual template designer** at `/designer`: drag-and-drop block canvas, property forms, data-contract editor, AI assist (drafts only — human applies), accessibility check, live preview, publish with gate errors surfaced |
+| `migration` | **Migration Studio**: legacy HTML/text ingestion → extracted blocks, variable detection, content-candidate matching, complexity/effort scoring, draft template creation, duplicate report, **parallel-run diff harness** |
+| `agent-desk` | Contact-center workspace at `/agent`: customer search, overview, resend, secure-link reissue, service notes — **every action audited** to the event chain |
+| `lifecycle` | Retention sweeps (expired links, retention-due counts), **GDPR erasure with legal-hold blocking** and dedupe-aware object deletion, backup/restore/verify CLI (`npm run backup`) |
 
 ## API
 

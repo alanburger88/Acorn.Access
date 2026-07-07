@@ -9,6 +9,7 @@
     "start": "tsx src/index.ts",
     "seed": "tsx src/seed.ts",
     "mcp": "tsx src/mcp-server.ts",
+    "backup": "tsx src/tools/backup.ts",
     "build": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

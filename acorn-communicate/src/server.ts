@@ -11,6 +11,7 @@ const RATE_LIMIT_EXEMPT = [
   '/readyz',
   '/console',
   '/designer',
+  '/agent',
   '/view/',
   '/api/view/',
   '/viewer-assets/',
@@ -78,6 +79,8 @@ export function buildPlatform(config: PlatformConfig): Platform {
   app.get('/console', async (_req, reply) => reply.type('text/html; charset=utf-8').send(consoleHtml));
   const designerHtml = readFileSync(new URL('./console/designer.html', import.meta.url), 'utf8');
   app.get('/designer', async (_req, reply) => reply.type('text/html; charset=utf-8').send(designerHtml));
+  const agentDeskHtml = readFileSync(new URL('./console/agent.html', import.meta.url), 'utf8');
+  app.get('/agent', async (_req, reply) => reply.type('text/html; charset=utf-8').send(agentDeskHtml));
   app.get('/', async (_req, reply) => reply.redirect('/console'));
 
   registerAllRoutes(app, ctx);

@@ -1091,3 +1091,133 @@ export interface UsageService {
     resetSeconds: number;
   };
 }
+
+// ---------------------------------------------------------------------------
+// Migration Studio (tier 4) — platform/09-migration-strategy.md
+// ---------------------------------------------------------------------------
+
+export interface MigrationJob {
+  id: string; // mig_
+  tenantId: string;
+  name: string;
+  sourceFormat: 'html' | 'text';
+  status: 'extracted' | 'drafted' | 'failed';
+  createdAt: string;
+  extracted: {
+    blocks: TemplateBlock[];
+    /** dot-path variable suggestions discovered in the legacy document */
+    variables: { path: string; sample: string; kind: 'currency' | 'date' | 'number' | 'text' }[];
+    /** reusable-content candidates with similarity hits against the library */
+    contentCandidates: {
+      title: string;
+      body: string;
+      similarTo?: { contentId: string; contentKey: string; similarity: number };
+    }[];
+  };
+  /** rubric score 0-100 (blocks, tables, variables, length) */
+  complexityScore: number;
+  /** effort estimate derived from the complexity rubric */
+  effortHours: number;
+  draftTemplateId?: string;
+  draftVersionId?: string;
+  error?: string;
+}
+
+export interface DuplicatePair {
+  aContentId: string;
+  aKey: string;
+  bContentId: string;
+  bKey: string;
+  similarity: number; // Jaccard over shingles, 0..1
+}
+
+export interface ParallelRunResult {
+  similarity: number; // 0..1 normalized line match ratio
+  matches: boolean; // similarity >= threshold
+  addedLines: string[]; // present in B, not in A
+  removedLines: string[]; // present in A, not in B
+}
+
+export interface MigrationService {
+  /**
+   * Ingest a legacy communication (HTML or plain text): extract structure into
+   * template blocks, detect variable regions (amounts, dates, account-like
+   * tokens) as data-contract suggestions, surface reusable-content candidates
+   * with near-duplicate matches against the approved library, score
+   * complexity/effort, and create a DRAFT template (never published — the
+   * normal accessibility/publish gates still apply).
+   */
+  ingestLegacy(
+    ctx: RequestCtx,
+    args: { name: string; sourceFormat: 'html' | 'text'; payload: string; brandId?: string },
+  ): Promise<MigrationJob>;
+  getJob(ctx: RequestCtx, jobId: string): MigrationJob;
+  listJobs(ctx: RequestCtx): MigrationJob[];
+  /** Near-duplicate report across the approved content library (rationalization input). */
+  duplicateReport(ctx: RequestCtx, threshold?: number): DuplicatePair[];
+  /**
+   * Parallel-run verification: render the 'text' format of two template
+   * versions with the same data and diff the normalized output
+   * (platform/09 §5 comparison harness).
+   */
+  parallelRun(
+    ctx: RequestCtx,
+    args: { versionAId: string; versionBId: string; data?: Record<string, unknown> },
+  ): Promise<ParallelRunResult>;
+}
+
+// ---------------------------------------------------------------------------
+// Agent desk (tier 4) — contact-center assist
+// ---------------------------------------------------------------------------
+
+export interface CustomerOverview {
+  customer: Customer;
+  preferences?: PreferenceRecord;
+  consents: ConsentRecord[];
+  communications: Communication[];
+  recentTimeline: TimelineEntry[];
+}
+
+export interface AgentDeskService {
+  /** Substring search over name/email/phone/externalRef. */
+  searchCustomers(ctx: RequestCtx, query: string): Customer[];
+  customerOverview(ctx: RequestCtx, customerId: string): CustomerOverview;
+  /** Re-deliver an existing communication; audited as an on-behalf agent action. */
+  resend(ctx: RequestCtx, communicationId: string, channels?: Channel[]): Promise<DeliveryAttempt[]>;
+  /** Revoke all live secure links for a communication and issue a fresh one; audited. */
+  reissueLink(ctx: RequestCtx, communicationId: string): Promise<{ url: string; expiresAt: string }>;
+  /** Attach a service note to the customer timeline; audited. */
+  addNote(ctx: RequestCtx, customerId: string, note: string): Promise<void>;
+}
+
+// ---------------------------------------------------------------------------
+// Data lifecycle (tier 4) — retention, erasure, hygiene
+// ---------------------------------------------------------------------------
+
+export interface ErasureReport {
+  customerId: string;
+  erased: boolean;
+  /** archive records under legal hold that blocked full erasure */
+  blockedBy: string[];
+  redactedCustomerFields: number;
+  revokedLinks: number;
+  deletedObjects: number;
+  tombstonedArchiveRecords: number;
+}
+
+export interface LifecycleService {
+  /**
+   * Housekeeping sweep: revoke expired secure links and count retention-due
+   * archive records (standard-7y). Returns what was done.
+   */
+  sweep(now?: number): Promise<{ expiredLinksRevoked: number; retentionDue: number }>;
+  /**
+   * GDPR/CCPA erasure: refuses when any of the customer's archive records is
+   * under legal hold; otherwise redacts customer PII to tombstone values,
+   * revokes links, deletes rendered artifacts and data snapshots from the
+   * object store, and tombstones archive records. The hash-chained event log
+   * is NOT rewritten (tamper-evidence wins; events carry pseudonymous ids —
+   * production adds crypto-shredding per platform/06).
+   */
+  eraseCustomer(ctx: RequestCtx, customerId: string, reason: string): Promise<ErasureReport>;
+}
