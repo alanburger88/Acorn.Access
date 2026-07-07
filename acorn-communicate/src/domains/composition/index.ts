@@ -212,7 +212,14 @@ const composeSchema = z.object({
 
 const outcomeSchema = z.object({ via: z.string().min(1) });
 
-const RENDER_FORMATS: readonly RenderFormat[] = ['html', 'pdf', 'email-html', 'sms-text', 'text'];
+const RENDER_FORMATS: readonly RenderFormat[] = [
+  'html',
+  'pdf',
+  'email-html',
+  'sms-text',
+  'text',
+  'voice-script',
+];
 
 export function registerCompositionRoutes(app: FastifyInstance, ctx: PlatformContext): void {
   const svc = () => ctx.services.composition;

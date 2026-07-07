@@ -189,7 +189,8 @@ describe('composition domain', () => {
   it('persists artifacts for html, pdf, text and email-html with retrievable objects', () => {
     const artifacts = ctx.services.composition.listArtifacts(TENANT, communication.id);
     const formats = artifacts.map((a) => a.format).sort();
-    expect(formats).toEqual(['email-html', 'html', 'pdf', 'text']); // no sms channel configured
+    // no sms channel configured; voice-script always rendered
+    expect(formats).toEqual(['email-html', 'html', 'pdf', 'text', 'voice-script']);
     for (const artifact of artifacts) {
       expect(artifact.size).toBeGreaterThan(0);
       expect(artifact.rendererVersion).toBe('acorn-renderer/1.0.0');

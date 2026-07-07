@@ -38,7 +38,7 @@ const COMPLIANCE_ROLES: Role[] = ['compliance-approver', 'auditor', 'tenant-admi
  * PDF is deliberately excluded: pdfkit embeds creation timestamps in the
  * bytes, so a re-render never hashes identically even when content matches.
  */
-const COMPARABLE_FORMATS: RenderFormat[] = ['html', 'text'];
+const COMPARABLE_FORMATS: RenderFormat[] = ['html', 'text', 'voice-script'];
 
 const sha256 = (buf: Buffer): string => createHash('sha256').update(buf).digest('hex');
 

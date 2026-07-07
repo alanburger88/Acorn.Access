@@ -197,6 +197,10 @@ export function createTemplateService(ctx: PlatformContext): TemplateService {
 
   const service: TemplateService = {
     createTemplate(rctx, args) {
+      // Optional consent purpose (marketing requires explicit opt-in at
+      // delivery time; undefined is treated as 'transactional'). Not part of
+      // the kernel contract's args yet — read permissively.
+      const purpose = (args as { purpose?: TemplateVersion['purpose'] }).purpose;
       const duplicate = templates.list(rctx.tenantId, (t) => t.key === args.key).at(0);
       if (duplicate) throw conflict(`template with key '${args.key}' already exists`);
 
@@ -219,6 +223,7 @@ export function createTemplateService(ctx: PlatformContext): TemplateService {
         status: 'draft',
         dataContract: args.dataContract,
         intendedOutcome: args.intendedOutcome,
+        ...(purpose ? { purpose } : {}),
         blocks: args.blocks,
         channels: args.channels ?? {},
         authorId: rctx.actorId,
@@ -242,6 +247,10 @@ export function createTemplateService(ctx: PlatformContext): TemplateService {
       const template = mustGetTemplate(rctx.tenantId, templateId);
       const latest = latestVersionOf(template);
       if (!latest) throw notFound('template version for template', templateId);
+      // Purpose copies forward from the latest version; an explicit value in
+      // args overrides it (see createTemplate note on the permissive read).
+      const purpose =
+        (args as { purpose?: TemplateVersion['purpose'] }).purpose ?? latest.purpose;
       const all = versions.list(rctx.tenantId, (v) => v.templateId === templateId);
       const next = all.reduce((max, v) => Math.max(max, v.version), 0) + 1;
       const version: TemplateVersion = {
@@ -252,6 +261,7 @@ export function createTemplateService(ctx: PlatformContext): TemplateService {
         status: 'draft',
         dataContract: args.dataContract ?? latest.dataContract,
         intendedOutcome: args.intendedOutcome ?? latest.intendedOutcome,
+        ...(purpose ? { purpose } : {}),
         blocks: args.blocks ?? latest.blocks,
         channels: args.channels ?? latest.channels,
         authorId: rctx.actorId,
@@ -419,6 +429,8 @@ const createTemplateSchema = z.object({
     'understood',
     'self_served',
   ]),
+  /** consent purpose; omitted = treated as 'transactional' */
+  purpose: z.enum(['transactional', 'marketing']).optional(),
   blocks: z.array(z.any()),
   channels: z.record(z.any()).optional(),
 });
@@ -426,6 +438,8 @@ const createTemplateSchema = z.object({
 const newVersionSchema = z.object({
   dataContract: dataContractSchema.optional(),
   intendedOutcome: createTemplateSchema.shape.intendedOutcome.optional(),
+  /** consent purpose; omitted = copied forward from the latest version */
+  purpose: z.enum(['transactional', 'marketing']).optional(),
   blocks: z.array(z.any()).optional(),
   channels: z.record(z.any()).optional(),
   aiAssisted: z.boolean().optional(),

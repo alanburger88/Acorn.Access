@@ -23,6 +23,7 @@ import { renderEmail } from './email.js';
 import { renderHtml } from './html.js';
 import { renderPdf } from './pdf.js';
 import { renderSms, renderText } from './text.js';
+import { renderVoiceScript } from './voice.js';
 
 const SOURCE = '/domains/rendering';
 void SOURCE; // rendering emits no events of its own today; composition owns lifecycle events
@@ -44,6 +45,8 @@ async function renderFormat(args: {
       return renderPdf(doc);
     case 'text':
       return renderText(doc);
+    case 'voice-script':
+      return renderVoiceScript(doc);
     case 'email-html': {
       const channel = templateVersion.channels.email;
       if (!channel) throw invalid('template version has no email channel configuration');
@@ -75,7 +78,7 @@ export function createRenderingService(ctx: PlatformContext): RenderingService {
       if (!snapshot) throw notFound('data snapshot', communication.dataSnapshotKey);
       const rawData = JSON.parse(snapshot.buf.toString('utf8')) as Record<string, unknown>;
 
-      const formats: RenderFormat[] = ['html', 'pdf', 'text'];
+      const formats: RenderFormat[] = ['html', 'pdf', 'text', 'voice-script'];
       if (templateVersion.channels.email) formats.push('email-html');
       if (templateVersion.channels.sms) formats.push('sms-text');
 
