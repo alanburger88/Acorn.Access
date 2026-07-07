@@ -1,0 +1,15 @@
+services:
+  acorn-communicate:
+    build: .
+    ports:
+      - "4000:4000"
+    environment:
+      ACORN_BASE_URL: http://localhost:4000
+      # ANTHROPIC_API_KEY: sk-...   # optional: enables the LLM assistant provider
+      # ACORN_ANTHROPIC_MODEL: claude-sonnet-5
+    volumes:
+      - acorn-data:/data
+    restart: unless-stopped
+
+volumes:
+  acorn-data:

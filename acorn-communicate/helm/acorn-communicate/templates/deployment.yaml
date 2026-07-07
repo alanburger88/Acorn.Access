@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  labels: { app: {{ .Release.Name }} }
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy: { type: Recreate } # single-writer data volume
+  selector:
+    matchLabels: { app: {{ .Release.Name }} }
+  template:
+    metadata:
+      labels: { app: {{ .Release.Name }} }
+    spec:
+      containers:
+        - name: app
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports: [{ containerPort: 4000 }]
+          env:
+            - { name: PORT, value: "4000" }
+            - { name: ACORN_DATA_DIR, value: /data }
+            - { name: ACORN_BASE_URL, value: {{ .Values.env.baseUrl | quote }} }
+            - { name: ACORN_ANTHROPIC_MODEL, value: {{ .Values.env.anthropicModel | quote }} }
+            {{- if .Values.anthropicSecretName }}
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.anthropicSecretName }}, key: ANTHROPIC_API_KEY }
+            {{- end }}
+          readinessProbe:
+            httpGet: { path: /readyz, port: 4000 }
+          livenessProbe:
+            httpGet: { path: /healthz, port: 4000 }
+          resources: {{ toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - { name: data, mountPath: /data }
+      volumes:
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim: { claimName: {{ .Release.Name }}-data }
+          {{- else }}
+          emptyDir: {}
+          {{- end }}

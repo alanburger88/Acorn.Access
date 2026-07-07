@@ -1,0 +1,32 @@
+replicaCount: 1 # file-backed reference store is single-writer; scale after swapping to Postgres
+
+image:
+  repository: acorn-communicate
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 4000
+
+env:
+  baseUrl: "https://communicate.example.com"
+  anthropicModel: "claude-sonnet-5"
+
+# Secret name holding ANTHROPIC_API_KEY (optional)
+anthropicSecretName: ""
+
+persistence:
+  enabled: true
+  size: 10Gi
+  storageClass: ""
+
+resources:
+  requests: { cpu: 250m, memory: 256Mi }
+  limits: { cpu: "1", memory: 1Gi }
+
+ingress:
+  enabled: false
+  className: nginx
+  host: communicate.example.com
+  tlsSecretName: ""

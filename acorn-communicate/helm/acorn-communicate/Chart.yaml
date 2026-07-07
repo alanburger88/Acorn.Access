@@ -1,0 +1,6 @@
+apiVersion: v2
+name: acorn-communicate
+description: Acorn Communicate — AI-native customer communication platform (reference deployment)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -31,6 +31,8 @@ const NEGATIVE_WORDS = [
   'denied',
   'declined',
   'late',
+  'fee',
+  'fees',
   'delinquent',
   'unfortunately',
   'regret',
@@ -59,6 +61,9 @@ const POSITIVE_WORDS = [
   'enjoy',
   'good',
   'free',
+  'save',
+  'saved',
+  'savings',
 ];
 
 function words(text: string): string[] {
@@ -89,9 +94,12 @@ function readingLevel(text: string): number {
 function sentiment(text: string): 'negative' | 'neutral' | 'positive' {
   const ws = words(text);
   let score = 0;
+  // exact match, or prefix match for stems long enough to be unambiguous
+  // (avoids e.g. 'fee' matching 'feel').
+  const hit = (kw: string, w: string) => w === kw || (kw.length >= 4 && w.startsWith(kw));
   for (const w of ws) {
-    if (NEGATIVE_WORDS.some((kw) => w === kw || w.startsWith(kw))) score -= 1;
-    else if (POSITIVE_WORDS.some((kw) => w === kw || w.startsWith(kw))) score += 1;
+    if (NEGATIVE_WORDS.some((kw) => hit(kw, w))) score -= 1;
+    else if (POSITIVE_WORDS.some((kw) => hit(kw, w))) score += 1;
   }
   if (score < 0) return 'negative';
   if (score > 0) return 'positive';

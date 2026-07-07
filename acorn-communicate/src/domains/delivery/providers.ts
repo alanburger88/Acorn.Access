@@ -49,13 +49,16 @@ export function createProviders(ctx: PlatformContext): Partial<Record<Channel, C
     writeFileSync(join(ctx.config.outboxDir, fileName), contents);
   }
 
-  function loadArtifactText(tenantId: string, communicationId: string, format: RenderFormat): string {
+  function loadArtifactText(
+    tenantId: string,
+    communicationId: string,
+    format: RenderFormat,
+    label: string,
+  ): string {
     const artifact = ctx.services.composition.getArtifact(tenantId, communicationId, format);
-    if (!artifact) {
-      throw invalid(`${format} artifact not rendered for communication ${communicationId}`);
-    }
+    if (!artifact) throw invalid(`no ${label} artifact`);
     const obj = ctx.objects.get(artifact.objectKey);
-    if (!obj) throw invalid(`artifact object ${artifact.objectKey} missing from object store`);
+    if (!obj) throw invalid(`no ${label} artifact`);
     return obj.buf.toString('utf8');
   }
 
@@ -64,23 +67,22 @@ export function createProviders(ctx: PlatformContext): Partial<Record<Channel, C
     resolveTo: (customer) => customer.email,
     async send({ tenantId, attemptId, to, communication, viewerUrl }) {
       // Simulated SMTP connect failure (transient — orchestrator retries).
-      if (to.includes('fail')) throw new Error('simulated transient smtp failure');
-      const html = loadArtifactText(tenantId, communication.id, 'email-html')
+      if (to.includes('fail')) throw new Error('smtp transient error');
+      const html = loadArtifactText(tenantId, communication.id, 'email-html', 'email')
         .split('{{link}}')
         .join(viewerUrl);
       // Subject convention with the renderer: first line is <!--subject:...-->.
       const subjectMatch = /^<!--subject:(.*?)-->/.exec(html.trimStart());
-      const subject = subjectMatch?.[1]?.trim() || communication.composed.title;
+      const subject = subjectMatch?.[1]?.trim() || 'Your document';
       // Production resolves the sender from the template's Brand.fromEmail;
-      // the simulated provider derives a tenant-scoped noreply address.
-      const from = `noreply@${communication.tenantId.replace(/^ten_/, '').toLowerCase()}.acorn`;
+      // the simulated provider uses a fixed platform address.
+      const from = 'statements@acorn-communicate.example';
       const eml = [
         `From: ${from}`,
         `To: ${to}`,
         `Subject: ${subject}`,
         'MIME-Version: 1.0',
         'Content-Type: text/html; charset=utf-8',
-        `X-Acorn-Attempt: ${attemptId}`,
         '',
         html,
       ].join('\r\n');
@@ -97,7 +99,7 @@ export function createProviders(ctx: PlatformContext): Partial<Record<Channel, C
     name: 'sim-sms',
     resolveTo: (customer) => customer.phone,
     async send({ tenantId, attemptId, to, communication, viewerUrl }) {
-      const text = loadArtifactText(tenantId, communication.id, 'sms-text')
+      const text = loadArtifactText(tenantId, communication.id, 'sms-text', 'sms')
         .split('{{link}}')
         .join(viewerUrl);
       outbox(`${attemptId}.sms.json`, JSON.stringify({ to, text }, null, 2));
@@ -125,15 +127,20 @@ export function createProviders(ctx: PlatformContext): Partial<Record<Channel, C
     resolveTo: (customer) =>
       customer.address
         ? `${customer.address.line1}, ${customer.address.city}, ${customer.address.region} ${customer.address.postalCode}, ${customer.address.country}`
-        : `postal:${customer.id}`,
-    async send({ tenantId, attemptId, to, communication, customer }) {
+        : undefined,
+    async send({ tenantId, attemptId, communication, customer }) {
       // Print spool entry; the pdf artifact is referenced by object key when
       // rendered. Delivery receipt comes later via providerCallback.
       const pdf = ctx.services.composition.getArtifact(tenantId, communication.id, 'pdf');
       outbox(
         `${attemptId}.print.json`,
         JSON.stringify(
-          { customerId: customer.id, address: to, artifact: 'pdf', objectKey: pdf?.objectKey ?? null },
+          {
+            customerId: customer.id,
+            name: customer.name,
+            address: customer.address,
+            artifactObjectKey: pdf?.objectKey ?? null,
+          },
           null,
           2,
         ),
