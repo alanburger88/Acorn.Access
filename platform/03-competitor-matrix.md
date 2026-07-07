@@ -1,6 +1,6 @@
 # 03 — Competitor Parity & Differentiation Matrix
 
-**Document:** Acorn Communicate — Competitive Landscape, Capability Matrix, Differentiation Thesis, Risks & Moats
+**Document:** Acorn OS — Competitive Landscape, Capability Matrix, Differentiation Thesis, Risks & Moats
 **Status:** Build-ready strategy input
 **As-of:** Early 2026 (vendor capabilities based on publicly available information; hedged where uncertain)
 **Owner:** Product Strategy
@@ -52,7 +52,7 @@ architecturally pre-AI and slow-moving; the middle (Messagepoint, Precisely) is 
 the vertical/attach players (Doxim, Broadridge, Fiserv, CSG, MHC) own distribution but not
 technology. No vendor currently combines: AI-native core + interactive-document-centered
 experience + agent/MCP readiness + full-depth CCM (print/postal/archive) + deployment
-flexibility + white-label embedding. That composite is Acorn Communicate's target position.
+flexibility + white-label embedding. That composite is Acorn OS's target position.
 
 ---
 

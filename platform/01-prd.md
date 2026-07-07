@@ -1,4 +1,4 @@
-# Acorn Communicate — Product Requirements Document
+# Acorn OS — Product Requirements Document
 
 **Document type:** Platform PRD
 **Owner:** Product Management
@@ -495,7 +495,7 @@ Design intent: the archive is not storage; it is the enterprise's ability to pro
 
 ## 19. Enterprise release definition
 
-The ENT release makes Acorn Communicate a full incumbent replacement and PSP/OEM-grade platform. Everything marked ENT above, organized around five programs:
+The ENT release makes Acorn OS a full incumbent replacement and PSP/OEM-grade platform. Everything marked ENT above, organized around five programs:
 
 1. **Print & output parity**: AFP, PCL, PostScript, ZPL, Metacode, PDF/VT, line data; packaging/bundling/splitting; householding; inserts/onserts; postal presort + commingling + IMb tracing; certified mail with electronic return receipt.
 2. **Migration factory**: incumbent-format converters, print-stream re-engineering, migration validation with semantic diff and sign-off evidence, portfolio dedup analytics, archive migration-in.

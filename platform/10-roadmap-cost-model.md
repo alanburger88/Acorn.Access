@@ -1,6 +1,6 @@
 # 10 — Phased Roadmap & Cost Model
 
-**Document:** Acorn Communicate — Build Roadmap (Part A) and Cloud Cost Architecture / Unit Economics (Part B)
+**Document:** Acorn OS — Build Roadmap (Part A) and Cloud Cost Architecture / Unit Economics (Part B)
 **Status:** Build-ready strategy input
 **As-of:** 2026-07 planning baseline
 **Owner:** Product Strategy + Platform Engineering + FinOps

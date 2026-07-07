@@ -1,9 +1,9 @@
-# Acorn Communicate — Capability Coverage Matrix
+# Acorn OS — Capability Coverage Matrix
 
 **Document type:** PRD-to-implementation traceability
 **Owner:** Product Management / Platform Engineering
-**Status:** Living document — reflects the state of `acorn-communicate/` at the date below
-**Related documents:** `01-prd.md` (FR/NFR IDs), `02-feature-inventory.md` (feature catalog), `acorn-communicate/README.md`
+**Status:** Living document — reflects the state of `acorn-os/` at the date below
+**Related documents:** `01-prd.md` (FR/NFR IDs), `02-feature-inventory.md` (feature catalog), `acorn-os/README.md`
 **As of:** 2026-07-07 · 195 tests passing (32 files) · 24 domains · ~15.7k LOC of `src/*.ts`
 
 ---
@@ -11,7 +11,7 @@
 ## 1. Purpose and how to read this
 
 This matrix maps every requirement area of the design suite to its **actual, verifiable** state in
-the reference implementation under `acorn-communicate/src/`. It exists so a reviewer can confirm the
+the reference implementation under `acorn-os/src/`. It exists so a reviewer can confirm the
 platform is a genuinely full-featured, end-to-end working system — the outcome loop from ingest →
 compose → render → deliver → interact → measure → archive is real and tested — while being **candid**
 about which production seams are simulated in this single-node reference build and which ENT-scoped

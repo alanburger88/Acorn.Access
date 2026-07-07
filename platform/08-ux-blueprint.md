@@ -1,4 +1,4 @@
-# Acorn Communicate — UI/UX Blueprint & Design System Plan
+# Acorn OS — UI/UX Blueprint & Design System Plan
 
 > **Document 08 · Platform Series** · Owner: Product Design · Status: Build-ready
 > North star: *"A premium design tool and an enterprise control tower had a very responsible child."*
@@ -59,7 +59,7 @@ Top-bar elements, left to right:
 ### 2.2 Full sitemap of surfaces
 
 ```
-Acorn Communicate
+Acorn OS
 ├── Home Dashboard                      (persona-adaptive, /home)
 ├── Create
 │   ├── Content Library                 (/content — blocks, snippets, assets, translations)

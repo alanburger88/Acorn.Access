@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acorn OS — Console</title>
+<style>
+  :root{--bg:#f6f7f5;--panel:#fff;--ink:#17211b;--mut:#5b6862;--brand:#1b3a2f;--acc:#2f6b4f;--line:#dde3de;--bad:#a33;--ok:#256e43}
+  @media (prefers-color-scheme: dark){:root{--bg:#141a16;--panel:#1c231e;--ink:#e8ece9;--mut:#98a49d;--brand:#7fb99a;--acc:#8fcaa9;--line:#2c352f;--bad:#e08a8a;--ok:#7fc79b}}
+  *{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--ink)}
+  header{display:flex;align-items:center;gap:16px;padding:10px 20px;background:var(--brand);color:#fff}
+  @media (prefers-color-scheme: dark){header{color:#10241a}}
+  header h1{font-size:15px;margin:0;letter-spacing:.06em}
+  header input{margin-left:auto;padding:6px 10px;border-radius:6px;border:none;min-width:280px;font:inherit}
+  nav{display:flex;gap:2px;padding:0 12px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+  nav button{border:none;background:none;color:var(--mut);padding:11px 14px;font:inherit;cursor:pointer;border-bottom:2px solid transparent}
+  nav button[aria-current="true"]{color:var(--ink);border-bottom-color:var(--acc);font-weight:600}
+  nav button:focus-visible{outline:2px solid var(--acc)}
+  main{padding:20px;max-width:1180px;margin:0 auto}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .card b{display:block;font-size:24px}.card span{color:var(--mut);font-size:12px}
+  table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  th,td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}
+  tr:last-child td{border-bottom:none}
+  .pill{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px;border:1px solid var(--line)}
+  .pill.ok{color:var(--ok);border-color:var(--ok)}.pill.bad{color:var(--bad);border-color:var(--bad)}
+  button.act{background:var(--acc);border:none;color:#fff;padding:6px 12px;border-radius:6px;cursor:pointer;font:inherit}
+  button.act.ghost{background:none;color:var(--acc);border:1px solid var(--acc)}
+  textarea,select,input.f{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink);font:13px/1.4 ui-monospace,monospace}
+  h2{font-size:16px;margin:18px 0 10px}
+  pre{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;overflow:auto;font-size:12px;max-height:480px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .err{color:var(--bad)}.mut{color:var(--mut)}
+  a{color:var(--acc)}
+  @media (max-width:800px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>ACORN OS</h1>
+  <span style="opacity:.7;font-size:12px">operator console</span>
+  <input id="apikey" type="password" placeholder="Paste tenant API key…" aria-label="API key">
+</header>
+<nav id="nav" aria-label="Sections"></nav>
+<main id="main" aria-live="polite"></main>
+<script>
+const $ = (s)=>document.querySelector(s);
+const main = $('#main');
+const keyInput = $('#apikey');
+keyInput.value = localStorage.getItem('acorn-key')||'';
+keyInput.addEventListener('change',()=>{localStorage.setItem('acorn-key',keyInput.value);route(current);});
+
+async function api(path, opts={}){
+  const res = await fetch(path,{...opts,headers:{'content-type':'application/json','authorization':'Bearer '+keyInput.value,...(opts.headers||{})}});
+  if(!res.ok){const p=await res.json().catch(()=>({detail:res.statusText}));throw new Error(p.title?`${p.title}: ${p.detail??''}`:res.statusText);}
+  return res.json();
+}
+const esc=(s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const money=(n)=>typeof n==='number'?n.toLocaleString('en-US',{style:'currency',currency:'USD'}):n;
+const when=(t)=>t?new Date(t).toLocaleString():'';
+const pill=(s)=>`<span class="pill ${['delivered','archived','approved','published','completed','delivered'].includes(s)?'ok':(['failed','bounced','rejected'].includes(s)?'bad':'')}">${esc(s)}</span>`;
+
+const views = {
+  async dashboard(){
+    const m = await api('/v1/analytics/overview');
+    let chain={intact:'n/a'};try{chain=await api('/v1/audit/verify-chain');}catch(e){}
+    main.innerHTML = `<div class="cards">
+      ${card(m.communications,'communications')}${card(m.delivered,'delivered')}${card(m.failed,'failed')}
+      ${card(m.viewed,'viewed')}${card(m.actionsCompleted,'actions completed')}
+      ${card((m.outcomeRate*100).toFixed(0)+'%','outcome rate')}
+      ${card((m.callDeflectionProxy*100).toFixed(0)+'%','call deflection')}
+      ${card(chain.intact===true?'intact':chain.intact,'audit chain')}
+    </div>
+    <h2>Channel performance</h2>
+    <table><thead><tr><th>Channel</th><th>Sent</th><th>Delivered</th><th>Failed</th></tr></thead><tbody>
+    ${Object.entries(m.byChannel||{}).map(([ch,v])=>`<tr><td>${esc(ch)}</td><td>${v.sent}</td><td>${v.delivered}</td><td>${v.failed}</td></tr>`).join('')||'<tr><td colspan="4" class="mut">No deliveries yet</td></tr>'}
+    </tbody></table>`;
+  },
+  async communications(){
+    const coms = await api('/v1/communications');
+    main.innerHTML = `<h2>Communications (${coms.length})</h2>
+    <table><thead><tr><th>Id</th><th>Status</th><th>Outcome</th><th>Created</th><th></th></tr></thead><tbody>
+    ${coms.map(c=>`<tr><td><code>${c.id.slice(0,18)}…</code><br><span class="mut">${esc(c.composed?.title||'')} → ${esc(c.composed?.customerName||'')}</span></td>
+      <td>${pill(c.status)}</td><td>${c.outcome?.achieved?`<span class="pill ok">achieved ${esc(c.outcome.via||'')}</span>`:'<span class="mut">pending</span>'}</td>
+      <td>${when(c.createdAt)}</td>
+      <td><button class="act ghost" onclick="detail('${c.id}')">Detail</button></td></tr>`).join('')||'<tr><td colspan="5" class="mut">None yet — run the seed or ingest a batch.</td></tr>'}
+    </tbody></table><div id="detail"></div>`;
+  },
+  async templates(){
+    const ts = await api('/v1/templates');
+    main.innerHTML=`<h2>Templates</h2><table><thead><tr><th>Key</th><th>Name</th><th>Type</th><th>Published</th></tr></thead><tbody>
+    ${ts.map(t=>`<tr><td><code>${esc(t.key)}</code></td><td>${esc(t.name)}</td><td>${esc(t.communicationType)}</td>
+    <td>${t.publishedVersionId?pill('published'):pill('draft')}</td></tr>`).join('')||'<tr><td colspan="4" class="mut">None</td></tr>'}</tbody></table>`;
+  },
+  async content(){
+    const cs = await api('/v1/content');
+    main.innerHTML=`<h2>Content library</h2><table><thead><tr><th>Key</th><th>Type</th><th>Title</th><th>Approved</th></tr></thead><tbody>
+    ${cs.map(c=>`<tr><td><code>${esc(c.key)}</code></td><td>${esc(c.type)}</td><td>${esc(c.title)}</td>
+    <td>${c.approvedVersionId?pill('approved'):pill('draft')}</td></tr>`).join('')||'<tr><td colspan="4" class="mut">None</td></tr>'}</tbody></table>`;
+  },
+  async customers(){
+    const cs = await api('/v1/customers');
+    main.innerHTML=`<h2>Customers</h2><table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>
+    ${cs.map(c=>`<tr><td>${esc(c.name)}</td><td>${esc(c.email||'')}</td><td>${esc(c.phone||'')}</td>
+    <td><button class="act ghost" onclick="ctl('${c.id}')">Timeline</button></td></tr>`).join('')}</tbody></table><div id="detail"></div>`;
+  },
+  async deliveries(){
+    const ds = await api('/v1/deliveries');
+    main.innerHTML=`<h2>Delivery monitor</h2><table><thead><tr><th>When</th><th>Channel</th><th>To</th><th>Status</th><th>Attempt</th><th>Failover</th></tr></thead><tbody>
+    ${ds.map(d=>`<tr><td>${when(d.createdAt)}</td><td>${esc(d.channel)}</td><td>${esc(d.to)}</td><td>${pill(d.status)}${d.failureReason?` <span class="err">${esc(d.failureReason)}</span>`:''}</td><td>${d.attempt}</td><td>${esc(d.failoverFrom||'')}</td></tr>`).join('')||'<tr><td colspan="6" class="mut">None</td></tr>'}</tbody></table>`;
+  },
+  async archive(){
+    const rs = await api('/v1/archive');
+    main.innerHTML=`<h2>Archive</h2><table><thead><tr><th>Communication</th><th>Stored</th><th>Retention</th><th>Legal hold</th><th></th></tr></thead><tbody>
+    ${rs.map(r=>`<tr><td><code>${r.communicationId.slice(0,18)}…</code></td><td>${when(r.storedAt)}</td><td>${esc(r.retentionClass)}</td>
+    <td>${r.legalHold?'<span class="pill bad">HOLD</span>':'—'}</td>
+    <td><button class="act ghost" onclick="evidence('${r.communicationId}')">Evidence pack</button></td></tr>`).join('')||'<tr><td colspan="5" class="mut">None</td></tr>'}</tbody></table><div id="detail"></div>`;
+  },
+  async journeys(){
+    const [js, is] = await Promise.all([api('/v1/journeys'), api('/v1/journey-instances')]);
+    main.innerHTML=`<h2>Journeys</h2><table><thead><tr><th>Key</th><th>Name</th><th>Steps</th><th>Active</th></tr></thead><tbody>
+    ${js.map(j=>`<tr><td><code>${esc(j.key)}</code></td><td>${esc(j.name)}</td><td class="mut">${j.steps.map(s=>s.kind).join(' → ')}</td><td>${j.active?'✓':'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mut">None</td></tr>'}</tbody></table>
+    <h2>Instances (${is.length})</h2><table><thead><tr><th>Id</th><th>Status</th><th>Step</th><th>Deadline</th><th>History</th></tr></thead><tbody>
+    ${is.map(i=>`<tr><td><code>${i.id.slice(0,16)}…</code></td><td>${pill(i.status)}</td><td><code>${esc(i.currentStepId)}</code></td><td>${when(i.deadlineAt)}</td>
+    <td class="mut">${i.history.map(h=>esc(h.note)).join(' · ')}</td></tr>`).join('')||'<tr><td colspan="5" class="mut">None</td></tr>'}</tbody></table>
+    <p><button class="act ghost" onclick="api('/v1/journeys/tick',{method:'POST',body:'{}'}).then(()=>route('journeys'))">Run scheduler tick</button></p>`;
+  },
+  async print(){
+    const bs = await api('/v1/print-batches');
+    main.innerHTML=`<h2>Print batches</h2><table><thead><tr><th>Batch</th><th>Status</th><th>Pieces</th><th>Suppressed</th><th></th></tr></thead><tbody>
+    ${bs.map(b=>`<tr><td><code>${b.id.slice(0,16)}…</code><br><span class="mut">${when(b.createdAt)}</span></td><td>${pill(b.status)}</td>
+    <td>${b.pieceIds.length}</td><td>${b.suppressed.length?b.suppressed.map(s=>`<span class="err">${esc(s.reason)}</span>`).join(', '):'—'}</td>
+    <td><button class="act ghost" onclick="pieces('${b.id}')">Pieces</button> <button class="act ghost" onclick="api('/v1/print-batches/${b.id}/reconcile',{method:'POST',body:'{}'}).then(r=>{$('#detail').innerHTML='<pre>'+esc(JSON.stringify(r,null,2))+'</pre>'})">Reconcile</button></td></tr>`).join('')||'<tr><td colspan="5" class="mut">None</td></tr>'}</tbody></table><div id="detail"></div>`;
+  },
+  async ingest(){
+    main.innerHTML=`<h2>Batch ingestion</h2>
+    <div class="row"><div>
+      <label>Template <select id="tsel" class="f"></select></label>
+      <label>Format <select id="fsel" class="f"><option>json</option><option>csv</option></select></label>
+      <p><label><input type="checkbox" id="del" checked> Deliver after compose</label></p>
+      <button class="act" id="run">Ingest batch</button> <span id="istat" class="mut"></span>
+    </div><div>
+      <textarea id="payload" rows="14" aria-label="Batch payload" placeholder='[{"customerRef":"CUST-1001", ...}]'></textarea>
+    </div></div><div id="detail"></div>`;
+    const ts = await api('/v1/templates');
+    $('#tsel').innerHTML = ts.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+    $('#run').onclick = async ()=>{
+      $('#istat').textContent='running…';
+      try{
+        const job = await api('/v1/ingestion/batches',{method:'POST',body:JSON.stringify({templateId:$('#tsel').value,sourceFormat:$('#fsel').value,payload:$('#payload').value,deliver:$('#del').checked})});
+        $('#istat').textContent=`job ${job.status}: ${job.validCount}/${job.recordCount} composed, ${job.errorCount} errors`;
+        $('#detail').innerHTML='<h2>Job result</h2><pre>'+esc(JSON.stringify(job,null,2))+'</pre>';
+      }catch(e){$('#istat').innerHTML='<span class="err">'+esc(e.message)+'</span>';}
+    };
+  },
+  async usage(){
+    const periods = await api('/v1/usage/periods').catch(()=>[]);
+    const u = await api('/v1/usage'+(window.__usagePeriod?'?period='+encodeURIComponent(window.__usagePeriod):''));
+    const deliveries = Object.entries(u.metrics).filter(([m])=>m.startsWith('deliveries.')).reduce((s,[,q])=>s+q,0);
+    const opts = (periods.length?periods:[u.period]).map(p=>`<option value="${esc(p)}"${p===u.period?' selected':''}>${esc(p)}</option>`).join('');
+    main.innerHTML=`<h2>Usage &amp; estimated cost — period <select id="psel" class="f" style="width:auto;display:inline-block">${opts}</select></h2>
+    <div class="cards">
+      ${card('$'+u.estimatedCostUsd.toFixed(4),'estimated cost (USD)')}
+      ${card(u.metrics['renders']??0,'renders')}
+      ${card(deliveries,'deliveries')}
+      ${card(u.metrics['ai.invocations']??0,'ai invocations')}
+    </div>
+    <table><thead><tr><th>Metric</th><th>Quantity</th><th>Unit rate</th><th>Cost</th></tr></thead><tbody>
+    ${Object.entries(u.metrics).sort(([a],[b])=>a.localeCompare(b)).map(([m,q])=>{const r=u.rates[m]??0;return `<tr><td><code>${esc(m)}</code></td><td>${q}</td><td class="mut">$${r}</td><td>$${(q*r).toFixed(4)}</td></tr>`;}).join('')||'<tr><td colspan="4" class="mut">No usage recorded for this period</td></tr>'}
+    </tbody></table>
+    <p class="mut">Reference unit rates per the platform cost model — estimation only, not a bill.</p>`;
+    $('#psel').onchange=()=>{window.__usagePeriod=$('#psel').value;route('usage');};
+  },
+  async migration(){
+    main.innerHTML=`<h2>Migration studio</h2>
+    <div class="row"><div>
+      <label>Name <input id="mname" class="f" placeholder="Legacy statement"></label>
+      <label>Format <select id="mfmt" class="f"><option>html</option><option>text</option></select></label>
+      <p><button class="act" id="mingest">Ingest</button> <button class="act ghost" id="mdup">Duplicate report</button> <span id="mstat" class="mut"></span></p>
+    </div><div>
+      <textarea id="mpayload" rows="14" aria-label="Legacy document" placeholder="Paste legacy HTML or plain text…"></textarea>
+    </div></div><div id="detail"></div><h2>Jobs</h2><div id="mjobs"></div>`;
+    const renderJobs = async ()=>{
+      const jobs = await api('/v1/migration/jobs');
+      $('#mjobs').innerHTML=`<table><thead><tr><th>Name</th><th>Format</th><th>Status</th><th>Complexity</th><th>Effort (h)</th><th>Draft template</th><th>Created</th></tr></thead><tbody>
+      ${jobs.map(j=>`<tr><td>${esc(j.name)}</td><td>${esc(j.sourceFormat)}</td><td>${pill(j.status)}${j.error?` <span class="err">${esc(j.error)}</span>`:''}</td>
+      <td>${j.complexityScore}</td><td>${j.effortHours}</td><td>${j.draftTemplateId?`<code>${esc(j.draftTemplateId.slice(0,18))}…</code>`:'—'}</td><td>${when(j.createdAt)}</td></tr>`).join('')||'<tr><td colspan="7" class="mut">None yet — paste a legacy document above.</td></tr>'}
+      </tbody></table>`;
+    };
+    await renderJobs();
+    $('#mingest').onclick = async ()=>{
+      $('#mstat').textContent='ingesting…';
+      try{
+        const job = await api('/v1/migration/jobs',{method:'POST',body:JSON.stringify({name:$('#mname').value||'Legacy document',sourceFormat:$('#mfmt').value,payload:$('#mpayload').value})});
+        $('#mstat').textContent=`job ${job.status}`;
+        $('#detail').innerHTML=`<h2>Job result</h2>
+        <div class="cards">${card(job.complexityScore,'complexity (0-100)')}${card(job.effortHours+'h','estimated effort')}${card(job.extracted.variables.length,'variables detected')}${card(job.extracted.contentCandidates.length,'content candidates')}</div>
+        ${job.draftTemplateId?`<p>Draft template <code>${esc(job.draftTemplateId)}</code> created — stays a draft; the usual accessibility/publish gates apply (see Templates tab).</p>`:''}
+        ${job.error?`<p class="err">${esc(job.error)}</p>`:''}
+        <h2>Variables</h2><table><thead><tr><th>Path</th><th>Kind</th><th>Sample</th></tr></thead><tbody>
+        ${job.extracted.variables.map(v=>`<tr><td><code>${esc(v.path)}</code></td><td>${esc(v.kind)}</td><td>${esc(v.sample)}</td></tr>`).join('')||'<tr><td colspan="3" class="mut">None detected</td></tr>'}</tbody></table>
+        <h2>Content candidates</h2><table><thead><tr><th>Candidate</th><th>Library match</th></tr></thead><tbody>
+        ${job.extracted.contentCandidates.map(c=>`<tr><td>${esc(c.title)}<br><span class="mut">${esc(c.body.slice(0,140))}${c.body.length>140?'…':''}</span></td>
+        <td>${c.similarTo?`<span class="pill bad">${(c.similarTo.similarity*100).toFixed(0)}% similar</span> to <code>${esc(c.similarTo.contentKey)}</code> — consider reusing the approved content`:'<span class="mut">no match</span>'}</td></tr>`).join('')||'<tr><td colspan="2" class="mut">None</td></tr>'}</tbody></table>`;
+        await renderJobs();
+      }catch(e){$('#mstat').innerHTML='<span class="err">'+esc(e.message)+'</span>';}
+    };
+    $('#mdup').onclick = async ()=>{
+      try{
+        const pairs = await api('/v1/migration/duplicate-report');
+        $('#detail').innerHTML=`<h2>Duplicate report (approved content, Jaccard ≥ 0.7)</h2><table><thead><tr><th>Content A</th><th>Content B</th><th>Similarity</th></tr></thead><tbody>
+        ${pairs.map(p=>`<tr><td><code>${esc(p.aKey)}</code></td><td><code>${esc(p.bKey)}</code></td><td>${(p.similarity*100).toFixed(1)}%</td></tr>`).join('')||'<tr><td colspan="3" class="mut">No near-duplicates found</td></tr>'}</tbody></table>`;
+      }catch(e){$('#detail').innerHTML=`<p class="err">${esc(e.message)}</p>`;}
+    };
+  },
+};
+
+const card=(v,l)=>`<div class="card"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
+
+window.detail = async (id)=>{
+  const [com, timeline, recs, arts] = await Promise.all([
+    api('/v1/communications/'+id), api(`/v1/communications/${id}/timeline`),
+    api(`/v1/communications/${id}/recommendations`).catch(()=>[]),
+    api(`/v1/communications/${id}/artifacts`).catch(()=>[]),
+  ]);
+  let link=null; try{ link = await api(`/v1/communications/${id}/secure-link`);}catch(e){}
+  $('#detail').innerHTML = `<h2>Communication ${esc(id)}</h2>
+  <p>${pill(com.status)} ${link?`&nbsp; <a href="${esc(link.url)}" target="_blank" rel="noopener">Open interactive document ↗</a>`:''}
+  &nbsp; ${arts.map(a=>`<a href="/v1/communications/${id}/artifacts/${a.format}/download" class="mut">${esc(a.format)}</a>`).join(' · ')}</p>
+  <div class="row"><div><h2>Timeline</h2><table><tbody>
+  ${timeline.map(t=>`<tr><td class="mut" style="white-space:nowrap">${when(t.at)}</td><td>${esc(t.summary)}</td></tr>`).join('')}
+  </tbody></table></div>
+  <div><h2>Next best actions</h2><table><tbody>
+  ${recs.map(r=>`<tr><td>${pill(r.action)}${r.taken?' ✓':''}</td><td>${esc(r.reason)}<br><span class="mut">rule ${esc(r.ruleId)}</span></td></tr>`).join('')||'<tr><td class="mut">None</td></tr>'}
+  </tbody></table></div></div>`;
+  $('#detail').scrollIntoView({behavior:'smooth'});
+};
+window.ctl = async (id)=>{
+  const t = await api(`/v1/customers/${id}/timeline`);
+  $('#detail').innerHTML = `<h2>Customer timeline</h2><table><tbody>${t.map(e=>`<tr><td class="mut" style="white-space:nowrap">${when(e.at)}</td><td>${esc(e.summary)}</td></tr>`).join('')||'<tr><td class="mut">No events</td></tr>'}</tbody></table>`;
+};
+window.pieces = async (batchId)=>{
+  const ps = await api(`/v1/print-batches/${batchId}/pieces`);
+  $('#detail').innerHTML = `<h2>Pieces</h2><table><thead><tr><th>Piece</th><th>ZIP</th><th>IMB</th><th>Status</th><th>Advance</th></tr></thead><tbody>
+  ${ps.map(p=>`<tr><td><code>${p.id.slice(0,16)}…</code></td><td>${esc(p.postalCode)}</td><td class="mut">${esc(p.imb.slice(0,12))}…</td><td>${pill(p.status)}</td>
+  <td>${['printed','mailed','delivered','returned'].map(s=>`<button class="act ghost" onclick="api('/v1/print-pieces/${p.id}/events',{method:'POST',body:JSON.stringify({status:'${s}'})}).then(()=>pieces('${batchId}')).catch(e=>alert(e.message))">${s}</button>`).join(' ')}</td></tr>`).join('')}
+  </tbody></table>`;
+};
+window.evidence = async (id)=>{
+  const p = await api(`/v1/archive/${id}/evidence-pack`);
+  $('#detail').innerHTML = `<h2>Evidence pack — chain ${p.eventChain.intact?'intact ✓':'BROKEN ✗'}</h2><pre>${esc(JSON.stringify(p,null,2))}</pre>`;
+};
+
+const tabs = ['dashboard','communications','templates','content','customers','deliveries','journeys','print','archive','ingest','usage','migration'];
+let current='dashboard';
+$('#nav').innerHTML = tabs.map(t=>`<button data-t="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('');
+$('#nav').addEventListener('click',(e)=>{const t=e.target.dataset?.t;if(t)route(t);});
+async function route(tab){
+  current=tab;
+  document.querySelectorAll('#nav button').forEach(b=>b.setAttribute('aria-current',b.dataset.t===tab));
+  if(!keyInput.value){main.innerHTML='<p class="mut">Paste your tenant API key above to begin (printed by <code>npm run seed</code>).</p>';return;}
+  main.innerHTML='<p class="mut">Loading…</p>';
+  try{await views[tab]();}catch(e){main.innerHTML=`<p class="err">${esc(e.message)}</p>`;}
+}
+route(current);
+</script>
+</body>
+</html>

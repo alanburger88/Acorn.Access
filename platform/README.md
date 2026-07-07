@@ -1,8 +1,8 @@
-# Acorn Communicate — AI-Native Customer Communication Platform
+# Acorn OS — AI-Native Customer Communication Platform
 
 **Design & Build Documentation Suite**
 
-Acorn Communicate is an AI-native customer communication operating system that unifies
+Acorn OS is an AI-native customer communication operating system that unifies
 **CCM** (customer communication management), **CXM** (customer experience management),
 **IXM** (interactive experience management), and **AIXM** (AI experience management)
 into a single platform.
@@ -40,11 +40,11 @@ end-customer accessibility layer.
 
 ## Working implementation
 
-A tested, runnable implementation of this design lives in [`../acorn-communicate/`](../acorn-communicate/README.md) — a modular monolith across the bounded contexts in doc 04, with three operator web apps, the interactive customer viewer, REST/GraphQL/MCP/webhook surfaces, and swappable storage. See doc 12 for exactly what is implemented, simulated, or designed-only.
+A tested, runnable implementation of this design lives in [`../acorn-os/`](../acorn-os/README.md) — a modular monolith across the bounded contexts in doc 04, with three operator web apps, the interactive customer viewer, REST/GraphQL/MCP/webhook surfaces, and swappable storage. See doc 12 for exactly what is implemented, simulated, or designed-only.
 
 ## The four pillars
 
-| Pillar | What it means in Acorn Communicate |
+| Pillar | What it means in Acorn OS |
 |--------|-------------------------------------|
 | **CCM** | Composition, template management, content management, approvals, batch + on-demand production, output management (interactive HTML5, PDF/A/UA/VT, AFP, PCL, PostScript, email, and more), delivery tracking, archive & retrieval |
 | **CXM** | Personalized journeys, channel preference and consent management, omnichannel orchestration with failover, engagement analytics, next best action, outcome tracking |

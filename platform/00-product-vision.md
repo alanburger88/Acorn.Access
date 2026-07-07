@@ -1,4 +1,4 @@
-# Acorn Communicate — Product Vision
+# Acorn OS — Product Vision
 
 **Document type:** Product Vision
 **Owner:** Product Management
@@ -9,7 +9,7 @@
 
 ## 1. One-sentence definition
 
-Acorn Communicate is an AI-native customer communication operating system that unifies communication composition (CCM), experience orchestration (CXM), interactive documents (IXM), and lifecycle-embedded AI (AIXM) on a single tenant-aware platform, governed end to end by a simple rule:
+Acorn OS is an AI-native customer communication operating system that unifies communication composition (CCM), experience orchestration (CXM), interactive documents (IXM), and lifecycle-embedded AI (AIXM) on a single tenant-aware platform, governed end to end by a simple rule:
 
 > **Compose once. Personalize intelligently. Deliver everywhere. Make every communication interactive, compliant, accessible, measurable and outcome-driven.**
 
@@ -29,17 +29,17 @@ The concrete failures:
 6. **Channel silos with rented orchestration.** Print lives in CCM, email in a marketing cloud, SMS in a CPaaS console, the portal in a digital team's backlog. Preferences, consent, frequency caps and quiet hours are enforced inconsistently — or not at all — because no single system owns the customer's communication relationship.
 7. **The archive is a landfill.** Statements of record are stored as rendered blobs with no link to the template version, the data snapshot, the approval chain, or the delivery proof. When a regulator or court asks "prove exactly what this customer saw, why, and who approved it," the answer is an expensive forensic project.
 
-Incumbents — Quadient, OpenText, Smart Communications, Messagepoint, Precisely EngageOne, Adobe AEM Forms, Doxim, Broadridge, Fiserv, CSG, MHC — each solve a slice. None owns the full loop from data ingestion through composition, orchestration, interaction, and outcome measurement, with AI as the substrate rather than the garnish. That is the category Acorn Communicate defines.
+Incumbents — Quadient, OpenText, Smart Communications, Messagepoint, Precisely EngageOne, Adobe AEM Forms, Doxim, Broadridge, Fiserv, CSG, MHC — each solve a slice. None owns the full loop from data ingestion through composition, orchestration, interaction, and outcome measurement, with AI as the substrate rather than the garnish. That is the category Acorn OS defines.
 
 ---
 
 ## 3. The category shift: from document factory to AI-native communication OS
 
-Acorn Communicate is not a better document factory. It is a **communication operating system**: the layer through which every regulated, transactional, and servicing communication in the enterprise is composed, governed, delivered, experienced, and measured.
+Acorn OS is not a better document factory. It is a **communication operating system**: the layer through which every regulated, transactional, and servicing communication in the enterprise is composed, governed, delivered, experienced, and measured.
 
 The defining shifts:
 
-| Dimension | Legacy CCM | Acorn Communicate |
+| Dimension | Legacy CCM | Acorn OS |
 |---|---|---|
 | Unit of work | Document / print job | **Communication** with a declared intended outcome |
 | Composition | Per-channel templates, duplicated content | Compose once from governed **content objects**; render to every channel and format |
@@ -57,7 +57,7 @@ The defining shifts:
 
 ## 4. The four pillars, unified
 
-The industry treats CCM, CXM, IXM and AI as separate product categories. Acorn Communicate treats them as four pillars of one system sharing one content model, one data spine, one governance layer, and one analytics fabric.
+The industry treats CCM, CXM, IXM and AI as separate product categories. Acorn OS treats them as four pillars of one system sharing one content model, one data spine, one governance layer, and one analytics fabric.
 
 ### 4.1 CCM — Communication Composition & Management
 The system of record for what the enterprise says. Data ingestion from any enterprise format (JSON, XML, CSV, fixed-width, Excel, Parquet, Avro, EDI/X12, HL7, FHIR, ACORD, ISO 20022, PDF, Word, legacy print streams). An enterprise CMS of reusable content objects — blocks, clauses, disclosures — with versioning, approvals, effective dating, impact analysis, and reuse tracking. A world-class drag-and-drop template designer covering responsive digital, interactive, PDF, print, email, SMS, chat, voice-script and video-storyboard design. High-volume batch and on-demand rendering to every required output, from interactive HTML5 to PDF/UA to AFP and Metacode. Output management: packaging, bundling, splitting, householding, inserts, postal optimization. Immutable archive.
@@ -94,7 +94,7 @@ AI embedded across the full lifecycle, governed as a first-class subsystem: auth
 
 ## 6. Personas and value propositions
 
-| Persona | Today's pain | Acorn Communicate value proposition |
+| Persona | Today's pain | Acorn OS value proposition |
 |---|---|---|
 | **Business user** (line-of-business owner of a communication) | Every change is an IT ticket; weeks of lead time; no visibility into results | Self-service edits to governed content with AI drafting, guardrailed approvals, and an outcome dashboard for every communication they own |
 | **Template designer** | Five tools for five channels; brittle legacy composition tools; manual accessibility fixes | One designer for every channel and format; AI converts legacy PDFs to templates; accessibility, readability and compliance checked while designing, not after |
@@ -165,7 +165,7 @@ The platform is where regulated enterprises *operate* their customer communicati
 
 ## 10. Competitive positioning
 
-Acorn Communicate competes by refusing the category boundaries incumbents defend. Positioning per competitor:
+Acorn OS competes by refusing the category boundaries incumbents defend. Positioning per competitor:
 
 | Competitor | Their strength | Their structural gap | Our wedge |
 |---|---|---|---|

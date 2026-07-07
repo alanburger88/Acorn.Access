@@ -1,4 +1,4 @@
-# Acorn Communicate — Security, Compliance, AI Governance & Accessibility Model
+# Acorn OS — Security, Compliance, AI Governance & Accessibility Model
 
 | Field | Value |
 |---|---|
@@ -9,7 +9,7 @@
 | Control ID scheme | `SEC-*` security, `CMP-*` compliance, `AIG-*` AI governance, `ACC-*` accessibility |
 | Enforcement | Every control below carries an ID, an enforcement point, and an evidence artifact. Controls marked **[GATE]** block publication, deployment, or execution on failure. |
 
-Acorn Communicate composes, renders, delivers, and archives customer communications for regulated industries (banking, credit unions, insurance, healthcare, utilities, telecom, government, mortgage/loan servicing). It ships interactive documents with embedded actions (payments, disputes, e-signature), an embedded customer-facing AI assistant, and REST/GraphQL/MCP/webhook APIs. This document is the normative control catalog for the platform.
+Acorn OS composes, renders, delivers, and archives customer communications for regulated industries (banking, credit unions, insurance, healthcare, utilities, telecom, government, mortgage/loan servicing). It ships interactive documents with embedded actions (payments, disputes, e-signature), an embedded customer-facing AI assistant, and REST/GraphQL/MCP/webhook APIs. This document is the normative control catalog for the platform.
 
 ---
 

@@ -1,0 +1,6 @@
+apiVersion: v2
+name: acorn-os
+description: Acorn OS — AI-native customer communication platform (reference deployment)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

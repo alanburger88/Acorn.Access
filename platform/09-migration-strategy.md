@@ -11,7 +11,7 @@
 
 ### 1.1 Philosophy: migration is the product, not a project
 
-Every prospective Acorn Communicate customer already owns a legacy CCM estate — Quadient Inspire, OpenText Exstream, Smart Communications, Precisely EngageOne, Adobe (LiveCycle/AEM Forms/Central), Doxim, or a homegrown COBOL-and-Word-macros stack. The single largest objection to replacing any of these is: *"We have 3,000 templates and a decade of embedded business rules. We cannot re-author that."*
+Every prospective Acorn OS customer already owns a legacy CCM estate — Quadient Inspire, OpenText Exstream, Smart Communications, Precisely EngageOne, Adobe (LiveCycle/AEM Forms/Central), Doxim, or a homegrown COBOL-and-Word-macros stack. The single largest objection to replacing any of these is: *"We have 3,000 templates and a decade of embedded business rules. We cannot re-author that."*
 
 Our answer is that they should not re-author it — and they should not lift-and-shift it either. Legacy CCM estates are 60–85% redundant by content mass: cloned templates, forked disclosure variants, dead conditions, hardcoded values that were once data-driven, and print-era layouts that fail accessibility and mobile rendering. Copying that debt into a new platform recreates the old problem at new prices.
 
@@ -25,7 +25,7 @@ Our answer is that they should not re-author it — and they should not lift-and
 
 ### 1.2 Migration Studio: the product
 
-Migration Studio is a workspace inside Acorn Communicate (also deployable standalone for pre-sales assessments) comprising:
+Migration Studio is a workspace inside Acorn OS (also deployable standalone for pre-sales assessments) comprising:
 
 | Module | What it does | Primary persona |
 |---|---|---|
@@ -397,7 +397,7 @@ Legacy statement-of-record archives (often AFP/PDF in ECM or bureau vaults) migr
 ```mermaid
 flowchart LR
     U[Upstream systems\ncore banking, policy admin, CRM] --> R{Communication Router}
-    R -->|migrated template IDs| N[Acorn Communicate\ncompose · deliver · archive]
+    R -->|migrated template IDs| N[Acorn OS\ncompose · deliver · archive]
     R -->|not yet migrated| L[Legacy CCM]
     N --> AR[(Unified archive)]
     L --> AR

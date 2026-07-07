@@ -1,4 +1,4 @@
-# Acorn Communicate — Feature Inventory
+# Acorn OS — Feature Inventory
 
 **Document type:** Feature Catalog
 **Owner:** Product Management

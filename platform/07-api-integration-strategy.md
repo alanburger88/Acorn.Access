@@ -1,4 +1,4 @@
-# Acorn Communicate — API, Integration & Developer Experience Strategy
+# Acorn OS — API, Integration & Developer Experience Strategy
 
 **Document:** platform/07-api-integration-strategy.md
 **Status:** Build-ready
@@ -9,7 +9,7 @@
 
 ## 1. API Design Principles
 
-Acorn Communicate is API-first: every capability the UI has, the API has, and the API ships first. All surfaces (REST, GraphQL, events, MCP) project the same domain model and enforce the same policy engine.
+Acorn OS is API-first: every capability the UI has, the API has, and the API ships first. All surfaces (REST, GraphQL, events, MCP) project the same domain model and enforce the same policy engine.
 
 ### 1.1 Resource-oriented REST
 

@@ -1,9 +1,9 @@
-# Acorn Communicate — Data Models
+# Acorn OS — Data Models
 
 **Document:** `platform/05-data-models.md`
 **Status:** Build-ready
 **Audience:** Platform engineering, data engineering, DBA/SRE, security & compliance
-**Scope:** Logical and physical data models for all bounded contexts of the Acorn Communicate platform (CCM/CXM/IXM/AIXM).
+**Scope:** Logical and physical data models for all bounded contexts of the Acorn OS platform (CCM/CXM/IXM/AIXM).
 
 ---
 

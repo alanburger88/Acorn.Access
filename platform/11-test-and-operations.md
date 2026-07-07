@@ -1,4 +1,4 @@
-# Acorn Communicate — Test Strategy & Operational Excellence
+# Acorn OS — Test Strategy & Operational Excellence
 
 **Document:** 11-test-and-operations.md
 **Status:** Build-ready v1.0
@@ -585,7 +585,7 @@ Weekly vuln review; SLA breaches auto-escalate to service owner's director. Base
 | Quarterly | SLO recalibration | Tighten/retire SLOs against tenant expectations and cost |
 | Quarterly | FinOps deep-dive | B.8 target review, tenant-margin actions |
 
-## C.16 Developer Documentation Outline (docs.acorn-communicate.com)
+## C.16 Developer Documentation Outline (docs.acorn-os.com)
 
 1. **Getting Started** — 15-minute quickstart (ingest a CSV → render a statement → deliver via email sandbox → view in portal); environment setup; auth (API keys, OAuth, service principals); Postman/Insomnia collections; sample tenant with seeded data.
 2. **Concepts** — architecture overview; tenancy & data residency; canonical data model; templates & versioning; rendering pipeline & output formats; delivery orchestration & fallback; journeys & events; interactive documents & embedded actions; the grounded assistant (how grounding, citations, and guardrails work); NBA; archive & retention model; deployment models (SaaS / private cloud / VPC).

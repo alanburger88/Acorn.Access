@@ -1,9 +1,9 @@
-# Acorn Communicate — Target Architecture
+# Acorn OS — Target Architecture
 
 **Document:** 04-architecture.md
 **Status:** Approved for build
 **Audience:** Engineering, SRE, Security, Product Architecture
-**Scope:** Full-platform target architecture for Acorn Communicate — the AI-native, multi-tenant customer communication platform unifying CCM, CXM, IXM, and AIXM capabilities for regulated enterprises.
+**Scope:** Full-platform target architecture for Acorn OS — the AI-native, multi-tenant customer communication platform unifying CCM, CXM, IXM, and AIXM capabilities for regulated enterprises.
 
 ---
 
@@ -40,7 +40,7 @@ flowchart LR
         OPS[Platform operators / SRE]
     end
 
-    subgraph Acorn["Acorn Communicate"]
+    subgraph Acorn["Acorn OS"]
         CORE[(Control plane +\nregional data planes)]
     end
 
