@@ -2,7 +2,13 @@ import { buildPlatform } from './server.js';
 import { configFromEnv } from './kernel/context.js';
 
 const config = configFromEnv();
-const { app } = buildPlatform(config);
+const { app, ctx } = buildPlatform(config);
+
+// Journey scheduler: advance wait-step deadlines (production uses a durable
+// timer queue; see platform/04 saga patterns).
+setInterval(() => {
+  ctx.services.journeys.tick().catch((err) => app.log.error(err, 'journey tick failed'));
+}, 5000).unref();
 
 app
   .listen({ port: config.port, host: '0.0.0.0' })

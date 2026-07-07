@@ -828,3 +828,143 @@ export interface IngestionService {
   /** Standalone PII/PHI scan of an arbitrary payload. */
   scanPii(payload: string): { path: string; kind: string; count: number }[];
 }
+
+// ---------------------------------------------------------------------------
+// Journey orchestration (tier 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Journey steps form an explicit state machine. `send` composes + delivers a
+ * communication from the trigger data; `wait` pauses until a lifecycle signal
+ * for the journey's communication arrives or the timeout elapses; `remind`
+ * re-delivers (optionally on specific channels); `end` terminates.
+ */
+export type JourneyStep =
+  | { id: string; kind: 'send'; templateId: string; channels?: Channel[]; next: string }
+  | {
+      id: string;
+      kind: 'wait';
+      until: 'outcome-achieved' | 'viewed' | 'action-completed';
+      timeoutMs: number;
+      onEvent: string; // step id to advance to when the signal arrives
+      onTimeout: string; // step id to advance to when the deadline passes
+    }
+  | { id: string; kind: 'remind'; channels?: Channel[]; next: string }
+  | { id: string; kind: 'end'; result: 'completed' | 'abandoned' };
+
+export interface Journey {
+  id: string; // jny_
+  tenantId: string;
+  key: string;
+  name: string;
+  /** first step id */
+  entryStepId: string;
+  steps: JourneyStep[];
+  active: boolean;
+  createdAt: string;
+}
+
+export interface JourneyInstance {
+  id: string; // jni_
+  tenantId: string;
+  journeyId: string;
+  customerId: string;
+  status: 'running' | 'completed' | 'abandoned' | 'failed';
+  currentStepId: string;
+  /** communication created by the journey's send step */
+  communicationId?: string;
+  /** set while parked on a wait step */
+  deadlineAt?: string;
+  data: Record<string, unknown>;
+  history: { at: string; stepId: string; note: string }[];
+  startedAt: string;
+  endedAt?: string;
+}
+
+export interface JourneyService {
+  createJourney(
+    ctx: RequestCtx,
+    args: { key: string; name: string; entryStepId: string; steps: JourneyStep[] },
+  ): Journey;
+  listJourneys(ctx: RequestCtx): Journey[];
+  getJourney(ctx: RequestCtx, journeyId: string): Journey;
+  /** Start an instance: runs steps until the first wait/end. */
+  start(args: {
+    tenantId: string;
+    journeyId: string;
+    customerId: string;
+    data: Record<string, unknown>;
+  }): Promise<JourneyInstance>;
+  getInstance(tenantId: string, id: string): JourneyInstance | undefined;
+  listInstances(
+    tenantId: string,
+    filter?: { journeyId?: string; customerId?: string; status?: JourneyInstance['status'] },
+  ): JourneyInstance[];
+  /** Advance every instance whose wait deadline has passed. Returns count advanced. */
+  tick(now?: number): Promise<number>;
+}
+
+// ---------------------------------------------------------------------------
+// Print production (tier 2)
+// ---------------------------------------------------------------------------
+
+export interface PrintPiece {
+  id: string; // pcs_
+  tenantId: string;
+  batchId: string;
+  communicationId: string;
+  customerId: string;
+  /** normalized address grouping key (householding) */
+  householdKey: string;
+  postalCode: string;
+  /** presort ordering key (postalCode + householdKey) */
+  sortKey: string;
+  /** Intelligent Mail barcode (simulated 31-digit) */
+  imb: string;
+  status: 'queued' | 'printed' | 'mailed' | 'delivered' | 'returned';
+  updatedAt: string;
+}
+
+export interface PrintBatch {
+  id: string; // pbt_
+  tenantId: string;
+  status: 'spooled' | 'shipped' | 'reconciled';
+  createdAt: string;
+  communicationIds: string[];
+  suppressed: { communicationId: string; reason: string }[];
+  /** households in presort order */
+  households: { householdKey: string; postalCode: string; pieceIds: string[] }[];
+  pieceIds: string[];
+  /** spool manifest written to the object store */
+  manifestObjectKey?: string;
+}
+
+export interface PrintService {
+  /**
+   * Spool a batch: validate addresses (suppress pieces without one),
+   * household by normalized address, presort by postal code, assign IMB
+   * codes, and write a spool manifest (JSON) referencing each piece's PDF
+   * artifact to the object store and outbox.
+   */
+  createBatch(
+    ctx: RequestCtx,
+    args: { communicationIds?: string[]; templateId?: string },
+  ): Promise<PrintBatch>;
+  getBatch(tenantId: string, batchId: string): PrintBatch | undefined;
+  listBatches(ctx: RequestCtx): PrintBatch[];
+  listPieces(tenantId: string, batchId: string): PrintPiece[];
+  /**
+   * Record a mail event from the print/postal provider. 'returned' also
+   * records a bounced print delivery attempt so downstream rules
+   * (NBA update-details) fire.
+   */
+  recordPieceEvent(
+    ctx: RequestCtx,
+    pieceId: string,
+    status: 'printed' | 'mailed' | 'delivered' | 'returned',
+  ): Promise<PrintPiece>;
+  reconcile(
+    ctx: RequestCtx,
+    batchId: string,
+  ): { expected: number; mailed: number; delivered: number; returned: number; outstanding: number };
+}

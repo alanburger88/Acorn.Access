@@ -9,7 +9,9 @@ import type {
   ContentService,
   DeliveryService,
   IngestionService,
+  JourneyService,
   NbaService,
+  PrintService,
   RenderingService,
   TemplateService,
   TenantService,
@@ -56,6 +58,8 @@ export interface PlatformServices {
   archive: ArchiveService;
   webhooks: WebhookService;
   ingestion: IngestionService;
+  journeys: JourneyService;
+  print: PrintService;
 }
 
 export interface PlatformContext {

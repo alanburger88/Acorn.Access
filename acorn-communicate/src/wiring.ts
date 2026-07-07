@@ -16,6 +16,10 @@ import { createNbaService, registerNbaRoutes } from './domains/nba/index.js';
 import { createAnalyticsService, registerAnalyticsRoutes } from './domains/analytics/index.js';
 import { createArchiveService, registerArchiveRoutes } from './domains/archive/index.js';
 import { createIngestionService, registerIngestionRoutes } from './domains/ingestion/index.js';
+import { createJourneyService, registerJourneyRoutes } from './domains/journeys/index.js';
+import { createPrintService, registerPrintRoutes } from './domains/print/index.js';
+import { registerGraphqlRoutes } from './api/graphql/index.js';
+import { registerOpenApiRoute } from './api/openapi.js';
 
 /**
  * Wire every bounded context into the shared context. Order matters only for
@@ -36,6 +40,8 @@ export function wireServices(ctx: PlatformContext): void {
   ctx.services.archive = createArchiveService(ctx);
   ctx.services.webhooks = createWebhookService(ctx);
   ctx.services.ingestion = createIngestionService(ctx);
+  ctx.services.journeys = createJourneyService(ctx);
+  ctx.services.print = createPrintService(ctx);
 }
 
 export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): void {
@@ -51,4 +57,8 @@ export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): v
   registerAnalyticsRoutes(app, ctx);
   registerArchiveRoutes(app, ctx);
   registerIngestionRoutes(app, ctx);
+  registerJourneyRoutes(app, ctx);
+  registerPrintRoutes(app, ctx);
+  registerGraphqlRoutes(app, ctx);
+  registerOpenApiRoute(app, ctx);
 }
