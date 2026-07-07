@@ -53,7 +53,7 @@ export function createIngestionService(ctx: PlatformContext): IngestionService {
   }
 
   const service: IngestionService = {
-    async ingestBatch({ ctx: rctx, templateId, sourceFormat, payload, deliver }) {
+    async ingestBatch({ ctx: rctx, templateId, sourceFormat, payload, deliver, mappingProfileId }) {
       const version = ctx.services.templates.publishedVersion(rctx.tenantId, templateId);
       if (!version) throw invalid(`template ${templateId} has no published version`);
 
@@ -80,7 +80,17 @@ export function createIngestionService(ctx: PlatformContext): IngestionService {
       for (let i = 0; i < records.length; i++) {
         const n = i + 1;
         try {
-          const record = records[i]!;
+          let record = records[i]!;
+          // Optional mapping profile: reshape the messy source record onto the
+          // template's data contract BEFORE customer resolution/validation.
+          if (mappingProfileId) {
+            try {
+              record = ctx.services.mapping.apply(rctx.tenantId, mappingProfileId, record);
+            } catch (err) {
+              const message = err instanceof Error ? err.message : String(err);
+              throw new Error(`mapping failed: ${message}`);
+            }
+          }
           const customer = resolveCustomer(rctx.tenantId, record);
           const { customerRef: _ref, customerId: _cid, ...data } = record;
           const communication = await ctx.services.composition.compose({
@@ -159,6 +169,7 @@ const ingestBatchSchema = z.object({
   sourceFormat: z.enum(['json', 'csv']),
   payload: z.string(),
   deliver: z.boolean().optional(),
+  mappingProfileId: z.string().min(1).optional(),
 });
 
 const piiScanSchema = z.object({ payload: z.string() });

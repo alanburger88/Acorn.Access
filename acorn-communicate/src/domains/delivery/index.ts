@@ -15,12 +15,14 @@ import type {
   DeliveryAttempt,
   DeliveryService,
   SecureLink,
+  Tenant,
 } from '../../kernel/contracts.js';
 import type { PlatformContext } from '../../kernel/context.js';
-import { notFound } from '../../kernel/errors.js';
+import { invalid, notFound } from '../../kernel/errors.js';
 import { parseBody, requireAuth } from '../../kernel/http.js';
 import { newId, newSecret } from '../../kernel/ids.js';
 import { createProviders } from './providers.js';
+import { inQuietHours, nextUtcMidnight, quietHoursEnd, sameUtcDay } from './scheduling.js';
 
 const SOURCE = '/domains/delivery';
 const LINK_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -45,6 +47,17 @@ function capable(channel: Channel, customer: Customer): boolean {
 const byCreation = (a: DeliveryAttempt, b: DeliveryAttempt): number =>
   a.createdAt === b.createdAt ? a.id.localeCompare(b.id) : a.createdAt.localeCompare(b.createdAt);
 
+/** channels that push an outbound message to the customer (quiet-hours scope) */
+const OUTBOUND_MESSAGE_CHANNELS: readonly Channel[] = ['email', 'sms'];
+
+/**
+ * Domain-local extension of the scheduled attempt row: the originally
+ * requested channels are stashed on the row so tick() can promote the
+ * delivery with the exact plan the caller asked for. The stored object may
+ * carry fields beyond the kernel DeliveryAttempt contract.
+ */
+type ScheduledRow = DeliveryAttempt & { plannedChannels?: Channel[] };
+
 // ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
@@ -54,6 +67,8 @@ export function createDeliveryService(ctx: PlatformContext): DeliveryService {
   const secureLinks = ctx.store.collection<SecureLink>('secureLinks');
   // read-only view of the tenants domain's customer collection
   const customers = ctx.store.collection<Customer>('customers');
+  // read-only view of the tenants domain's tenant collection (quiet hours, caps)
+  const tenants = ctx.store.collection<Tenant>('tenants');
   const providers = createProviders(ctx);
 
   async function emitDelivery(
@@ -108,8 +123,21 @@ export function createDeliveryService(ctx: PlatformContext): DeliveryService {
     return link;
   }
 
-  const service: DeliveryService = {
-    async deliver({ tenantId, communicationId, channels }) {
+  /**
+   * The full immediate-delivery orchestration (consent, secure link,
+   * providers, failover, retries). deliver() calls this when no deferral
+   * applies; tick() calls it directly when promoting a scheduled row.
+   */
+  async function executeNow({
+    tenantId,
+    communicationId,
+    channels,
+  }: {
+    tenantId: string;
+    communicationId: string;
+    channels?: Channel[];
+  }): Promise<DeliveryAttempt[]> {
+    {
       const communication = ctx.services.composition.getCommunication(tenantId, communicationId);
       if (!communication) throw notFound('communication', communicationId);
       const customer = customers.getFor(tenantId, communication.customerId);
@@ -280,6 +308,204 @@ export function createDeliveryService(ctx: PlatformContext): DeliveryService {
         anySucceeded ? 'delivered' : 'failed',
       );
       return attempts;
+    }
+  }
+
+  /**
+   * Record (or refresh) the single 'scheduled' row for a communication and
+   * emit delivery.scheduled. Providers are never touched and the
+   * communication status is left as-is.
+   */
+  async function scheduleDelivery(args: {
+    tenantId: string;
+    communicationId: string;
+    customerId: string;
+    /** effective channel plan (used only for the row's display channel) */
+    plan: Channel[];
+    /** original requested channels, replayed verbatim on promotion */
+    channels?: Channel[];
+    deferReason: NonNullable<DeliveryAttempt['deferReason']>;
+    scheduledForMs: number;
+  }): Promise<DeliveryAttempt> {
+    const nowIso = new Date().toISOString();
+    const scheduledFor = new Date(args.scheduledForMs).toISOString();
+    // Re-delivery while a scheduled row is pending: replace its
+    // scheduledFor/deferReason in place — never two scheduled rows per
+    // communication.
+    const pending = deliveries
+      .list(
+        args.tenantId,
+        (r) => r.communicationId === args.communicationId && r.status === 'scheduled',
+      )
+      .sort(byCreation)
+      .at(0) as ScheduledRow | undefined;
+    let row: ScheduledRow;
+    if (pending) {
+      const { plannedChannels: _stale, ...rest } = pending;
+      row = {
+        ...rest,
+        scheduledFor,
+        deferReason: args.deferReason,
+        updatedAt: nowIso,
+        ...(args.channels ? { plannedChannels: args.channels } : {}),
+      };
+    } else {
+      row = {
+        id: newId('dlv'),
+        tenantId: args.tenantId,
+        communicationId: args.communicationId,
+        customerId: args.customerId,
+        channel: args.plan[0] ?? 'email',
+        provider: 'scheduler',
+        to: '(deferred)',
+        status: 'scheduled',
+        attempt: 0,
+        createdAt: nowIso,
+        updatedAt: nowIso,
+        scheduledFor,
+        deferReason: args.deferReason,
+        ...(args.channels ? { plannedChannels: args.channels } : {}),
+      };
+    }
+    deliveries.put(row);
+    await ctx.publish({
+      type: 'com.acorn.delivery.scheduled',
+      tenantId: args.tenantId,
+      source: SOURCE,
+      subject: args.communicationId,
+      data: {
+        communicationId: args.communicationId,
+        customerId: args.customerId,
+        scheduledFor,
+        reason: args.deferReason,
+      },
+    });
+    return row;
+  }
+
+  const service: DeliveryService = {
+    async deliver({ tenantId, communicationId, channels, scheduleAt }) {
+      const now = Date.now();
+      const communication = ctx.services.composition.getCommunication(tenantId, communicationId);
+      if (!communication) throw notFound('communication', communicationId);
+      const customer = customers.getFor(tenantId, communication.customerId);
+      if (!customer) throw notFound('customer', communication.customerId);
+
+      // Effective channel plan, mirroring executeNow's resolution — needed up
+      // front because quiet hours only apply to outbound message channels.
+      const requested =
+        channels ??
+        communication.requestedChannels ??
+        ctx.services.tenants.preferredChannels(tenantId, customer.id);
+      const plan = requested.filter((c) => capable(c, customer) && Boolean(providers[c]));
+
+      // Deferral decision — computed BEFORE any provider attempt, in priority
+      // order: explicit schedule > quiet hours > frequency cap.
+      let deferReason: NonNullable<DeliveryAttempt['deferReason']> | undefined;
+      let scheduledForMs = 0;
+
+      // (a) explicit scheduleAt in the future
+      if (scheduleAt !== undefined) {
+        const at = Date.parse(scheduleAt);
+        if (Number.isNaN(at)) throw invalid('scheduleAt must be an ISO datetime');
+        if (at > now) {
+          deferReason = 'explicit-schedule';
+          scheduledForMs = at;
+        }
+      }
+
+      const tenant = tenants.getFor(tenantId, tenantId);
+
+      // (b) tenant quiet hours: only outbound message channels (email/sms)
+      // wake people up; secure-link/print/webhook-only plans go out anyway.
+      // Simplification: evaluated in UTC — production evaluates the window in
+      // the customer's locale timezone (see scheduling.ts).
+      if (!deferReason) {
+        const quietHours = tenant?.settings.quietHours;
+        const outbound = plan.some((c) => OUTBOUND_MESSAGE_CHANNELS.includes(c));
+        if (quietHours && outbound && inQuietHours(now, quietHours)) {
+          deferReason = 'quiet-hours';
+          scheduledForMs = quietHoursEnd(now, quietHours);
+        }
+      }
+
+      // (c) frequency cap: count today's (UTC) non-scheduled attempt rows for
+      // the customer; at/over the cap the delivery waits for the next UTC day.
+      if (!deferReason) {
+        const cap = tenant?.settings.maxDeliveriesPerCustomerPerDay;
+        if (cap !== undefined) {
+          const todayCount = deliveries.list(
+            tenantId,
+            (r) =>
+              r.customerId === customer.id &&
+              r.status !== 'scheduled' &&
+              sameUtcDay(Date.parse(r.createdAt), now),
+          ).length;
+          if (todayCount >= cap) {
+            deferReason = 'frequency-cap';
+            scheduledForMs = nextUtcMidnight(now);
+          }
+        }
+      }
+
+      if (deferReason) {
+        const row = await scheduleDelivery({
+          tenantId,
+          communicationId,
+          customerId: customer.id,
+          plan,
+          channels,
+          deferReason,
+          scheduledForMs,
+        });
+        return [row];
+      }
+
+      return executeNow({ tenantId, communicationId, channels });
+    },
+
+    async tick(now = Date.now()) {
+      const due = deliveries.listAll(
+        (r) => r.status === 'scheduled' && !!r.scheduledFor && Date.parse(r.scheduledFor) <= now,
+      ) as ScheduledRow[];
+      let promoted = 0;
+      for (const row of due) {
+        // tick() never throws: a broken row is marked failed and the sweep
+        // moves on to the next one.
+        try {
+          // Flip the row out of 'scheduled' and persist FIRST so a concurrent
+          // or re-entrant tick can never pick it up again.
+          deliveries.put({ ...row, status: 'queued', updatedAt: new Date().toISOString() });
+          await ctx.publish({
+            type: 'com.acorn.delivery.promoted',
+            tenantId: row.tenantId,
+            source: SOURCE,
+            subject: row.communicationId,
+            data: { communicationId: row.communicationId, scheduledAttemptId: row.id },
+          });
+          // Promotion skips the deferral checks (skipDeferralChecks): we call
+          // the raw orchestration, not deliver(). Rationale: a 'quiet-hours'
+          // row's scheduledFor IS the window end, so re-evaluating quiet
+          // hours at that boundary minute (or a cap re-count against rows the
+          // promotion itself creates) would re-defer forever. A promoted
+          // delivery always executes.
+          await executeNow({
+            tenantId: row.tenantId,
+            communicationId: row.communicationId,
+            channels: row.plannedChannels,
+          });
+          promoted++;
+        } catch (err) {
+          const failureReason = err instanceof Error ? err.message : String(err);
+          deliveries.put({
+            ...row,
+            status: 'failed',
+            failureReason,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+      return promoted;
     },
 
     listAttempts(tenantId, communicationId) {
@@ -330,6 +556,8 @@ const channelSchema = z.enum(['email', 'sms', 'secure-link', 'webhook', 'print']
 
 const deliverSchema = z.object({
   channels: z.array(channelSchema).min(1).optional(),
+  /** ISO datetime; a future instant defers the delivery to that time */
+  scheduleAt: z.string().datetime({ offset: true }).optional(),
 });
 
 const providerCallbackSchema = z.object({
@@ -348,7 +576,15 @@ export function registerDeliveryRoutes(app: FastifyInstance, ctx: PlatformContex
       tenantId: rctx.tenantId,
       communicationId: id,
       channels: body.channels,
+      scheduleAt: body.scheduleAt,
     });
+  });
+
+  // Promote due scheduled deliveries (also driven by the wiring's interval).
+  app.post('/v1/deliveries/tick', async (req) => {
+    requireAuth(ctx, req, ['operator', 'tenant-admin']);
+    const promoted = await delivery().tick();
+    return { promoted };
   });
 
   app.get('/v1/deliveries', async (req) => {
