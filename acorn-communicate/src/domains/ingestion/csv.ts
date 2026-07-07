@@ -52,6 +52,9 @@ function parseRows(text: string): string[][] {
 }
 
 function coerce(raw: string): unknown {
+  // Leading-zero values ('00123' account refs) stay strings — Number() would
+  // silently corrupt identifiers. Plain '0' and '0.5' still coerce.
+  if (/^0\d/.test(raw)) return raw;
   if (/^-?\d+(\.\d+)?$/.test(raw)) return Number(raw);
   if (raw === 'true') return true;
   if (raw === 'false') return false;

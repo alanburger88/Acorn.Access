@@ -92,6 +92,8 @@ function metricForEvent(e: PlatformEvent): { metric: string; qty: number } | und
 }
 
 const WINDOW_MS = 60_000;
+/** Memory-DoS guard: bucket keys are attacker-influenced (any random bearer token). */
+const MAX_BUCKETS = 10_000;
 
 // ---------------------------------------------------------------------------
 // Service
@@ -150,6 +152,18 @@ export function createUsageService(ctx: PlatformContext): UsageService {
       // for the reference deployment).
       const limit = Number(process.env.ACORN_RATE_LIMIT ?? 300);
       const now = Date.now();
+      // Bounded memory: sweep expired windows once the map grows, then
+      // hard-cap by evicting oldest insertion order.
+      if (buckets.size > MAX_BUCKETS) {
+        for (const [key, entry] of buckets) {
+          if (now - entry.windowStart >= WINDOW_MS) buckets.delete(key);
+        }
+        while (buckets.size > MAX_BUCKETS) {
+          const oldest = buckets.keys().next().value as string | undefined;
+          if (oldest === undefined) break;
+          buckets.delete(oldest);
+        }
+      }
       let bucket = buckets.get(bucketKey);
       if (!bucket || now - bucket.windowStart >= WINDOW_MS) {
         bucket = { windowStart: now, count: 0 };

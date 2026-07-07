@@ -70,8 +70,14 @@ export function applyTransform(t: MappingTransform, record: Record<string, unkno
 }
 
 /** Set a dot-path value, building nested objects along the way. */
+/** Segments that would let a crafted path reach the prototype chain. */
+const FORBIDDEN_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
+
 export function setPath(obj: Record<string, unknown>, dotPath: string, value: unknown): void {
   const parts = dotPath.split('.');
+  // Prototype-pollution guard: rule targets are validated against the data
+  // contract, but defense-in-depth costs one check.
+  if (parts.some((p) => FORBIDDEN_SEGMENTS.has(p))) return;
   let cur = obj;
   for (let i = 0; i < parts.length - 1; i++) {
     const key = parts[i]!;

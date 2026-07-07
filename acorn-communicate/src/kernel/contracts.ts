@@ -23,6 +23,8 @@ export interface Tenant {
     aiEnabled: boolean;
     /** defer deliveries beyond this many per customer per UTC day (unset = uncapped) */
     maxDeliveriesPerCustomerPerDay?: number;
+    /** origins allowed to iframe the embedded viewer (white-label/OEM); unset = embedding disabled */
+    embedAllowedOrigins?: string[];
   };
 }
 
@@ -231,6 +233,11 @@ export interface TemplateVersion {
   status: ApprovalStatus | 'published';
   dataContract: DataContract;
   intendedOutcome: IntendedOutcome;
+  /**
+   * Consent purpose: 'marketing' deliveries require an explicit granted
+   * consent record per channel (no implied consent); default 'transactional'.
+   */
+  purpose?: 'transactional' | 'marketing';
   /** master body composed once; channel renderers derive from it */
   blocks: TemplateBlock[];
   /** channel-specific overrides */
@@ -264,7 +271,7 @@ export interface AccessibilityReport {
 // Composition, rendering, communication lifecycle (event-sourced)
 // ---------------------------------------------------------------------------
 
-export type RenderFormat = 'html' | 'pdf' | 'email-html' | 'sms-text' | 'text';
+export type RenderFormat = 'html' | 'pdf' | 'email-html' | 'sms-text' | 'text' | 'voice-script';
 
 /** A resolved (data-bound) block — same shapes as TemplateBlock but with values substituted. */
 export interface ComposedSection {
@@ -620,7 +627,18 @@ export interface TenantService {
     args: { channelPriority: Channel[]; language?: string; paperless?: boolean },
   ): PreferenceRecord;
   getPreferences(ctx: RequestCtx, customerId: string): PreferenceRecord | undefined;
-  hasConsent(tenantId: string, customerId: string, channel: Channel): boolean;
+  /**
+   * Purpose-aware consent (platform/06 consent evidence): transactional
+   * (service) communications carry implied consent unless explicitly denied;
+   * 'marketing' requires an explicit granted record — no implied consent.
+   * Omitted purpose defaults to 'transactional' (backward compatible).
+   */
+  hasConsent(
+    tenantId: string,
+    customerId: string,
+    channel: Channel,
+    purpose?: 'transactional' | 'marketing',
+  ): boolean;
   preferredChannels(tenantId: string, customerId: string): Channel[];
 }
 

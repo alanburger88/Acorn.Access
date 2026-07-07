@@ -86,8 +86,19 @@ export function createViewerService(ctx: PlatformContext): ViewerService {
       if (new Date(link.expiresAt).getTime() < Date.now()) return { ok: false, reason: 'expired' };
       if (link.otpCode) {
         if (!otp) return { ok: false, reason: 'otp-required' };
-        if (!timingSafeEqual(digest(otp), digest(link.otpCode)))
-          return { ok: false, reason: 'otp-invalid' };
+        if (!timingSafeEqual(digest(otp), digest(link.otpCode))) {
+          // OTP brute-force guard: persist a failure counter on the link and
+          // revoke it after 5 wrong codes (the customer service desk can
+          // reissue a fresh link). Counter lives on the row so it survives
+          // restarts and applies across processes.
+          type LinkWithFailures = typeof link & { otpFailures?: number };
+          const withFailures = link as LinkWithFailures;
+          const failures = (withFailures.otpFailures ?? 0) + 1;
+          const updated: LinkWithFailures = { ...withFailures, otpFailures: failures };
+          if (failures >= 5) updated.revokedAt = new Date().toISOString();
+          secureLinks.put(updated);
+          return { ok: false, reason: failures >= 5 ? 'revoked' : 'otp-invalid' };
+        }
       }
       const communication = communications.getFor(link.tenantId, link.communicationId);
       if (!communication) return { ok: false, reason: 'not-found' };

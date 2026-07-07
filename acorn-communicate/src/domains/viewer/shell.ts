@@ -239,6 +239,7 @@ function page(args: { title: string; body: string; script?: string }): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="Content-Security-Policy" content="${CSP}">
+<meta name="referrer" content="no-referrer">
 <title>${escapeHtml(args.title)}</title>
 <style>${SHELL_CSS}</style>
 </head>

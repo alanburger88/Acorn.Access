@@ -244,7 +244,11 @@ export function registerWebhookRoutes(app: FastifyInstance, ctx: PlatformContext
 
   app.get('/v1/webhooks', async (req) => {
     const rctx = requireAuth(ctx, req, ROLES);
-    return webhooks().list(rctx);
+    // The HMAC secret is returned exactly once, by the subscribe response —
+    // list reads must not re-expose it.
+    return webhooks()
+      .list(rctx)
+      .map(({ secret: _secret, ...rest }) => rest);
   });
 
   app.delete('/v1/webhooks/:id', async (req, reply) => {

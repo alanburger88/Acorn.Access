@@ -144,6 +144,15 @@ export function createDeliveryService(ctx: PlatformContext): DeliveryService {
       if (!customer) throw notFound('customer', communication.customerId);
       const customerId = customer.id;
 
+      // Consent purpose comes from the template version (marketing requires
+      // explicit opt-in; transactional carries implied consent).
+      const templateVersion = ctx.store
+        .collection<{ id: string; tenantId: string; purpose?: 'transactional' | 'marketing' }>(
+          'templateVersions',
+        )
+        .getFor(tenantId, communication.templateVersionId);
+      const purpose = templateVersion?.purpose ?? 'transactional';
+
       // Channel plan: explicit request > communication request > preferences;
       // then filter to channels the customer is actually reachable on.
       const requested =
@@ -207,7 +216,7 @@ export function createDeliveryService(ctx: PlatformContext): DeliveryService {
 
         // Consent gate: a denied channel is recorded and skipped, but it is
         // NOT a failover — the customer said no, the channel didn't break.
-        if (!ctx.services.tenants.hasConsent(tenantId, customerId, channel)) {
+        if (!ctx.services.tenants.hasConsent(tenantId, customerId, channel, purpose)) {
           const row = createAttempt(channel, provider.name, to, 1);
           updateAttempt(row, { status: 'failed', failureReason: 'no-consent' });
           await emitDelivery('failed', tenantId, communicationId, {
@@ -429,18 +438,24 @@ export function createDeliveryService(ctx: PlatformContext): DeliveryService {
         }
       }
 
-      // (c) frequency cap: count today's (UTC) non-scheduled attempt rows for
-      // the customer; at/over the cap the delivery waits for the next UTC day.
+      // (c) frequency cap: count today's (UTC) distinct COMMUNICATIONS with
+      // non-scheduled attempts for the customer — retries/failovers of one
+      // delivery must not burn extra cap slots. At/over the cap the delivery
+      // waits for the next UTC day.
       if (!deferReason) {
         const cap = tenant?.settings.maxDeliveriesPerCustomerPerDay;
         if (cap !== undefined) {
-          const todayCount = deliveries.list(
-            tenantId,
-            (r) =>
-              r.customerId === customer.id &&
-              r.status !== 'scheduled' &&
-              sameUtcDay(Date.parse(r.createdAt), now),
-          ).length;
+          const todayCount = new Set(
+            deliveries
+              .list(
+                tenantId,
+                (r) =>
+                  r.customerId === customer.id &&
+                  r.status !== 'scheduled' &&
+                  sameUtcDay(Date.parse(r.createdAt), now),
+              )
+              .map((r) => r.communicationId),
+          ).size;
           if (todayCount >= cap) {
             deferReason = 'frequency-cap';
             scheduledForMs = nextUtcMidnight(now);

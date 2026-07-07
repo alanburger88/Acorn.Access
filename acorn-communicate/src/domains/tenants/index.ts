@@ -225,11 +225,11 @@ export function createTenantService(ctx: PlatformContext): TenantService {
       return preferences.list(rctx.tenantId, (p) => p.customerId === customerId).at(0);
     },
 
-    hasConsent(tenantId, customerId, channel) {
+    hasConsent(tenantId, customerId, channel, purpose = 'transactional') {
       const records = consents
         .list(
           tenantId,
-          (r) => r.customerId === customerId && r.channel === channel && r.purpose === 'transactional',
+          (r) => r.customerId === customerId && r.channel === channel && r.purpose === purpose,
         )
         // latest record wins: order by recordedAt, tie-broken by ULID id
         // (monotonic within process)
@@ -239,14 +239,14 @@ export function createTenantService(ctx: PlatformContext): TenantService {
             : a.recordedAt.localeCompare(b.recordedAt),
         );
       const latest = records.at(-1);
-      // Default-allow when no consent record exists for the channel: service
-      // (transactional) communications carry implied consent — the customer
-      // has a business relationship with the tenant and must receive
-      // statements, bills and notices. This applies to every channel,
-      // including 'print' (which likewise defaults to allowed). An explicit
-      // granted=false record always blocks the channel.
-      if (!latest) return true;
-      return latest.granted;
+      if (latest) return latest.granted;
+      // No consent record on file:
+      // - transactional (service) communications carry IMPLIED consent — the
+      //   customer has a business relationship with the tenant and must
+      //   receive statements, bills and notices on any channel (incl. print).
+      // - marketing communications require EXPLICIT opt-in — no record means
+      //   no consent (GDPR/CCPA/CAN-SPAM/TCPA posture, platform/06).
+      return purpose === 'transactional';
     },
 
     preferredChannels(tenantId, customerId) {
