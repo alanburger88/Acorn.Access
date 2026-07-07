@@ -21,7 +21,11 @@ const RATE_LIMIT_EXEMPT = [
 
 function isRateLimitExempt(url: string): boolean {
   const path = url.split('?')[0] ?? url;
-  return RATE_LIMIT_EXEMPT.some((p) => (p.endsWith('/') ? path.startsWith(p) : path === p));
+  return RATE_LIMIT_EXEMPT.some((p) =>
+    // '/' is the console redirect — exact match only, never a prefix
+    // (a '/' prefix rule would exempt every request).
+    p !== '/' && p.endsWith('/') ? path.startsWith(p) : path === p,
+  );
 }
 
 export interface Platform {
