@@ -118,6 +118,10 @@ export function buildOpenApiDocument(ctx: PlatformContext): Dict {
       { name: 'journeys', description: 'Journey definitions and instances' },
       { name: 'print', description: 'Print batches, pieces, mail events' },
       { name: 'graphql', description: 'Read-only GraphQL projection' },
+      { name: 'translations', description: 'Locale variants with human approval and memory' },
+      { name: 'experiments', description: 'A/B experiments over template versions' },
+      { name: 'usage', description: 'Usage metering and estimated cost (FinOps)' },
+      { name: 'ai', description: 'AI authoring drafts (human approval required)' },
       { name: 'viewer (public)', description: 'Secure-link viewer (token-authorized, no API key)' },
       { name: 'meta', description: 'Service metadata' },
     ],
@@ -606,6 +610,101 @@ export function buildOpenApiDocument(ctx: PlatformContext): Dict {
       },
 
       // -- graphql ---------------------------------------------------------
+      // -- translations ----------------------------------------------------
+      '/v1/content/{id}/translations': {
+        post: op({
+          tag: 'translations',
+          summary: 'Machine-translate approved content into a locale (draft requiring human approval)',
+          parameters: [idParam],
+          requestSchema: {
+            type: 'object',
+            required: ['locale'],
+            properties: { locale: { type: 'string' } },
+          },
+        }),
+        get: op({ tag: 'translations', summary: 'List translations of a content object', parameters: [idParam] }),
+      },
+      '/v1/translations': {
+        get: op({ tag: 'translations', summary: 'List translations (filter by contentId)' }),
+      },
+      '/v1/translations/{id}/review': {
+        post: op({
+          tag: 'translations',
+          summary: 'Approve or reject a translation (segregation of duties enforced)',
+          parameters: [idParam],
+          requestSchema: {
+            type: 'object',
+            required: ['decision'],
+            properties: {
+              decision: { type: 'string', enum: ['approved', 'rejected'] },
+              note: { type: 'string' },
+            },
+          },
+        }),
+      },
+      '/v1/translation-memory/stats': {
+        get: op({ tag: 'translations', summary: 'Translation memory statistics' }),
+      },
+      // -- experiments -------------------------------------------------------
+      '/v1/experiments': {
+        post: op({
+          tag: 'experiments',
+          summary: 'Create an A/B experiment over template versions (accessibility-gated variants)',
+          requestSchema: {
+            type: 'object',
+            required: ['templateId', 'name', 'variants'],
+            properties: {
+              templateId: { type: 'string' },
+              name: { type: 'string' },
+              variants: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  required: ['versionId', 'weight'],
+                  properties: { versionId: { type: 'string' }, weight: { type: 'number' } },
+                },
+              },
+            },
+          },
+        }),
+        get: op({ tag: 'experiments', summary: 'List experiments' }),
+      },
+      '/v1/experiments/{id}': {
+        get: op({ tag: 'experiments', summary: 'Get an experiment', parameters: [idParam] }),
+      },
+      '/v1/experiments/{id}/results': {
+        get: op({ tag: 'experiments', summary: 'Per-variant assignment/engagement/outcome results', parameters: [idParam] }),
+      },
+      '/v1/experiments/{id}/conclude': {
+        post: op({
+          tag: 'experiments',
+          summary: 'Conclude an experiment (winner never bypasses the publish gate)',
+          parameters: [idParam],
+          requestSchema: {
+            type: 'object',
+            properties: { winnerVersionId: { type: 'string' } },
+          },
+        }),
+      },
+      // -- usage / FinOps ----------------------------------------------------
+      '/v1/usage': {
+        get: op({ tag: 'usage', summary: 'Usage summary with reference rates and estimated cost (?period=YYYY-MM)' }),
+      },
+      '/v1/usage/periods': {
+        get: op({ tag: 'usage', summary: 'List periods with recorded usage' }),
+      },
+      // -- ai ---------------------------------------------------------------
+      '/v1/ai/draft': {
+        post: op({
+          tag: 'ai',
+          summary: 'Generate an AI draft (always requires human approval before use)',
+          requestSchema: {
+            type: 'object',
+            required: ['instruction'],
+            properties: { instruction: { type: 'string' }, baseText: { type: 'string' } },
+          },
+        }),
+      },
       '/graphql': {
         post: op({
           tag: 'graphql',
