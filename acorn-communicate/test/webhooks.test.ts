@@ -153,3 +153,32 @@ describe('webhooks domain', () => {
     });
   });
 });
+
+describe('webhook SSRF guard', () => {
+  it('blocks loopback/link-local/private targets when enforcement is on', () => {
+    const tmp = mkdtempSync(join(tmpdir(), 'acorn-ssrf-'));
+    const ctx = createBaseContext(configFromEnv({ dataDir: tmp }));
+    const svc = createWebhookService(ctx);
+    const rctx: RequestCtx = { tenantId: 'ten_s', actorId: 'usr_s', roles: ['tenant-admin'], keyId: 'key_s' };
+
+    process.env.ACORN_BLOCK_PRIVATE_WEBHOOKS = '1';
+    try {
+      for (const url of [
+        'http://127.0.0.1:9/x',
+        'http://localhost/hook',
+        'http://169.254.169.254/latest/meta-data',
+        'http://10.0.0.5/hook',
+        'http://172.20.1.2/hook',
+        'http://192.168.1.10/hook',
+      ]) {
+        expect(() => svc.subscribe(rctx, { url, events: ['*'] }), url).toThrowError(/private|loopback/);
+      }
+      expect(() => svc.subscribe(rctx, { url: 'https://hooks.example.com/ok', events: ['*'] })).not.toThrow();
+    } finally {
+      delete process.env.ACORN_BLOCK_PRIVATE_WEBHOOKS;
+    }
+
+    // Enforcement off (dev/test default): private targets allowed.
+    expect(() => svc.subscribe(rctx, { url: 'http://127.0.0.1:9/x', events: ['*'] })).not.toThrow();
+  });
+});

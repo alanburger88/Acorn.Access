@@ -1221,3 +1221,27 @@ export interface LifecycleService {
    */
   eraseCustomer(ctx: RequestCtx, customerId: string, reason: string): Promise<ErasureReport>;
 }
+
+// ---------------------------------------------------------------------------
+// Archive replication (tier 5) — offsite WORM copy to S3-compatible storage
+// ---------------------------------------------------------------------------
+
+export interface ReplicationRecord {
+  id: string; // rpl_
+  tenantId: string;
+  communicationId: string;
+  status: 'replicated' | 'failed' | 'skipped';
+  attempts: number;
+  objectsReplicated: number;
+  bucketKeyPrefix: string;
+  lastError?: string;
+  updatedAt: string;
+}
+
+export interface ReplicationService {
+  /** Whether an S3-compatible target is configured (env-driven). */
+  enabled(): boolean;
+  /** Replicate one archived communication's manifest + artifacts. */
+  replicate(tenantId: string, communicationId: string): Promise<ReplicationRecord>;
+  status(ctx: RequestCtx): { enabled: boolean; replicated: number; failed: number; records: ReplicationRecord[] };
+}

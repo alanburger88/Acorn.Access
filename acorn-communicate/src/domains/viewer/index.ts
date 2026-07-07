@@ -7,6 +7,7 @@
  * grounded assistant Q&A over the composed document + approved FAQs.
  */
 import { readFileSync } from 'node:fs';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import type {
@@ -71,13 +72,22 @@ export function createViewerService(ctx: PlatformContext): ViewerService {
 
   const service: ViewerService = {
     resolveLink(token, otp) {
-      const link = secureLinks.listAll((l) => l.token === token).at(0);
+      // Timing-safe credential comparison (platform/06 SEC-DOC): compare
+      // sha256 digests with timingSafeEqual so lookup cost never leaks how
+      // much of a guessed token matched. Digesting first also normalizes
+      // lengths, which timingSafeEqual requires.
+      const digest = (value: string) => createHash('sha256').update(value).digest();
+      const tokenDigest = digest(token);
+      const link = secureLinks
+        .listAll((l) => timingSafeEqual(digest(l.token), tokenDigest))
+        .at(0);
       if (!link) return { ok: false, reason: 'not-found' };
       if (link.revokedAt) return { ok: false, reason: 'revoked' };
       if (new Date(link.expiresAt).getTime() < Date.now()) return { ok: false, reason: 'expired' };
       if (link.otpCode) {
         if (!otp) return { ok: false, reason: 'otp-required' };
-        if (otp !== link.otpCode) return { ok: false, reason: 'otp-invalid' };
+        if (!timingSafeEqual(digest(otp), digest(link.otpCode)))
+          return { ok: false, reason: 'otp-invalid' };
       }
       const communication = communications.getFor(link.tenantId, link.communicationId);
       if (!communication) return { ok: false, reason: 'not-found' };

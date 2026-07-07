@@ -2,6 +2,7 @@ import Fastify, { type FastifyInstance } from 'fastify';
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { createBaseContext, type PlatformConfig, type PlatformContext } from './kernel/context.js';
+import type { ObjectStorePort, StorePort } from './kernel/storage.js';
 import { problemJsonHandler } from './kernel/http.js';
 import { registerAllRoutes, wireServices } from './wiring.js';
 
@@ -34,8 +35,11 @@ export interface Platform {
   ctx: PlatformContext;
 }
 
-export function buildPlatform(config: PlatformConfig): Platform {
-  const ctx = createBaseContext(config);
+export function buildPlatform(
+  config: PlatformConfig,
+  adapters: { store?: StorePort; objects?: ObjectStorePort } = {},
+): Platform {
+  const ctx = createBaseContext(config, adapters);
   wireServices(ctx);
 
   const app = Fastify({

@@ -9,7 +9,7 @@
  * placeholder path never splits a sentence.
  */
 import { createHash } from 'node:crypto';
-import type { Collection } from '../../kernel/storage.js';
+import type { CollectionPort } from '../../kernel/storage.js';
 import { newId } from '../../kernel/ids.js';
 import { protectPlaceholders, translateText, type MachineLocale } from './dictionary.js';
 
@@ -28,7 +28,7 @@ export const segmentHash = (source: string, locale: string): string =>
   createHash('sha256').update(source + locale).digest('hex');
 
 export function lookup(
-  memory: Collection<TranslationMemoryEntry>,
+  memory: CollectionPort<TranslationMemoryEntry>,
   tenantId: string,
   locale: string,
   source: string,
@@ -38,7 +38,7 @@ export function lookup(
 }
 
 export function store(
-  memory: Collection<TranslationMemoryEntry>,
+  memory: CollectionPort<TranslationMemoryEntry>,
   tenantId: string,
   locale: string,
   source: string,
@@ -65,7 +65,7 @@ export function store(
  * the surrounding document.
  */
 export function translateWithMemory(
-  memory: Collection<TranslationMemoryEntry>,
+  memory: CollectionPort<TranslationMemoryEntry>,
   tenantId: string,
   text: string,
   locale: MachineLocale,

@@ -27,6 +27,8 @@ import { createUsageService, registerUsageRoutes } from './domains/usage/index.j
 import { createMigrationService, registerMigrationRoutes } from './domains/migration/index.js';
 import { createAgentDeskService, registerAgentDeskRoutes } from './domains/agent-desk/index.js';
 import { createLifecycleService, registerLifecycleRoutes } from './domains/lifecycle/index.js';
+import { createReplicationService, registerReplicationRoutes } from './domains/replication/index.js';
+import { installMetrics } from './api/metrics.js';
 
 /**
  * Wire every bounded context into the shared context. Order matters only for
@@ -55,6 +57,7 @@ export function wireServices(ctx: PlatformContext): void {
   ctx.services.migration = createMigrationService(ctx);
   ctx.services.agentDesk = createAgentDeskService(ctx);
   ctx.services.lifecycle = createLifecycleService(ctx);
+  ctx.services.replication = createReplicationService(ctx);
 }
 
 export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): void {
@@ -81,4 +84,6 @@ export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): v
   registerMigrationRoutes(app, ctx);
   registerAgentDeskRoutes(app, ctx);
   registerLifecycleRoutes(app, ctx);
+  registerReplicationRoutes(app, ctx);
+  installMetrics(app, ctx);
 }

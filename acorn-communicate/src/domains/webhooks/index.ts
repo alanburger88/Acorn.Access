@@ -16,7 +16,7 @@ import type {
   WebhookSubscription,
 } from '../../kernel/contracts.js';
 import type { PlatformContext } from '../../kernel/context.js';
-import { notFound } from '../../kernel/errors.js';
+import { invalid, notFound } from '../../kernel/errors.js';
 import type { PlatformEvent } from '../../kernel/events.js';
 import { parseBody, requireAuth } from '../../kernel/http.js';
 import { newId, newSecret } from '../../kernel/ids.js';
@@ -145,8 +145,43 @@ export function createWebhookService(ctx: PlatformContext): WebhookService {
     }
   });
 
+  /**
+   * SSRF guard (platform/06 SEC-APP): webhook targets are attacker-influenced
+   * URLs the platform will POST to. In production (or when
+   * ACORN_BLOCK_PRIVATE_WEBHOOKS=1) reject loopback/link-local/private
+   * literal hosts. DNS-resolution pinning is the production follow-up — a
+   * hostname can still resolve privately; the egress proxy is the real
+   * boundary there (comment, not implemented here).
+   */
+  function assertWebhookUrlAllowed(rawUrl: string): void {
+    const enforce =
+      process.env.NODE_ENV === 'production' || process.env.ACORN_BLOCK_PRIVATE_WEBHOOKS === '1';
+    if (!enforce) return;
+    const url = new URL(rawUrl);
+    if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+      throw invalid('webhook URL must be http(s)');
+    }
+    const host = url.hostname.toLowerCase();
+    const privatePatterns = [
+      /^localhost$/,
+      /^127\./,
+      /^10\./,
+      /^172\.(1[6-9]|2\d|3[01])\./,
+      /^192\.168\./,
+      /^169\.254\./,
+      /^0\.0\.0\.0$/,
+      /^\[?::1\]?$/,
+      /^\[?f[cd][0-9a-f]{2}:/, // fc00::/7 unique-local
+      /^\[?fe80:/, // link-local
+    ];
+    if (privatePatterns.some((p) => p.test(host))) {
+      throw invalid('webhook URL must not target loopback/private networks');
+    }
+  }
+
   const service: WebhookService = {
     subscribe(rctx, args) {
+      assertWebhookUrlAllowed(args.url);
       const sub: WebhookSubscription = {
         id: newId('whk'),
         tenantId: rctx.tenantId,

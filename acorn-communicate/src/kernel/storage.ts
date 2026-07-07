@@ -16,13 +16,39 @@ function atomicWrite(file: string, contents: string): void {
   renameSync(tmp, file);
 }
 
+// ---------------------------------------------------------------------------
+// Storage ports — adapters (src/adapters/*) implement these so deployments can
+// swap the file-backed reference store for SQL/object-storage backends without
+// touching any domain (platform/04 "store per purpose" ADR).
+// ---------------------------------------------------------------------------
+
+export interface CollectionPort<T extends { id: string; tenantId: string }> {
+  get(id: string): T | undefined;
+  /** Get scoped to a tenant — undefined when the doc belongs to another tenant. */
+  getFor(tenantId: string, id: string): T | undefined;
+  put(doc: T): T;
+  delete(id: string): boolean;
+  list(tenantId: string, filter?: (doc: T) => boolean): T[];
+  listAll(filter?: (doc: T) => boolean): T[];
+}
+
+export interface StorePort {
+  collection<T extends { id: string; tenantId: string }>(name: string): CollectionPort<T>;
+}
+
+export interface ObjectStorePort {
+  put(tenantId: string, buf: Buffer, contentType: string): StoredObject;
+  get(key: string): { buf: Buffer; contentType: string } | undefined;
+  listKeys(tenantId: string): string[];
+}
+
 /**
  * Durable document collection persisted as a single JSON file with atomic
  * writes. Suitable for the reference deployment; swap for Postgres via the
  * same interface in scaled deployments (see platform/04, ADR "store per
  * purpose"). All documents carry `id` and `tenantId`.
  */
-export class Collection<T extends { id: string; tenantId: string }> {
+export class Collection<T extends { id: string; tenantId: string }> implements CollectionPort<T> {
   private docs = new Map<string, T>();
 
   constructor(private file: string) {
@@ -75,7 +101,7 @@ export class Collection<T extends { id: string; tenantId: string }> {
   }
 }
 
-export class Store {
+export class Store implements StorePort {
   private collections = new Map<string, Collection<never>>();
 
   constructor(private dir: string) {
@@ -104,7 +130,7 @@ export interface StoredObject {
  * archives, ingestion payloads). Immutable by construction: the key embeds the
  * content hash, so a stored artifact can never be silently replaced.
  */
-export class ObjectStore {
+export class ObjectStore implements ObjectStorePort {
   constructor(private dir: string) {
     mkdirSync(dir, { recursive: true });
   }

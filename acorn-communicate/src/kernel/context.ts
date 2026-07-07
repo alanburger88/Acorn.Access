@@ -1,6 +1,6 @@
 import { join } from 'node:path';
 import { EventBus, EventLog, makeEvent, type PlatformEvent } from './events.js';
-import { ObjectStore, Store } from './storage.js';
+import { ObjectStore, Store, type ObjectStorePort, type StorePort } from './storage.js';
 import type {
   AgentDeskService,
   AiGateway,
@@ -16,6 +16,7 @@ import type {
   MigrationService,
   NbaService,
   PrintService,
+  ReplicationService,
   TranslationService,
   UsageService,
   RenderingService,
@@ -72,12 +73,13 @@ export interface PlatformServices {
   migration: MigrationService;
   agentDesk: AgentDeskService;
   lifecycle: LifecycleService;
+  replication: ReplicationService;
 }
 
 export interface PlatformContext {
   config: PlatformConfig;
-  store: Store;
-  objects: ObjectStore;
+  store: StorePort;
+  objects: ObjectStorePort;
   bus: EventBus;
   log: EventLog;
   /** Append to the tamper-evident log AND publish on the bus. */
@@ -91,9 +93,12 @@ export interface PlatformContext {
  * bus events in their factory, but must only call peer services lazily (at
  * request/event time), never during construction.
  */
-export function createBaseContext(config: PlatformConfig): PlatformContext {
-  const store = new Store(join(config.dataDir, 'collections'));
-  const objects = new ObjectStore(join(config.dataDir, 'objects'));
+export function createBaseContext(
+  config: PlatformConfig,
+  adapters: { store?: StorePort; objects?: ObjectStorePort } = {},
+): PlatformContext {
+  const store = adapters.store ?? new Store(join(config.dataDir, 'collections'));
+  const objects = adapters.objects ?? new ObjectStore(join(config.dataDir, 'objects'));
   const bus = new EventBus();
   const log = new EventLog(join(config.dataDir, 'events'));
 
