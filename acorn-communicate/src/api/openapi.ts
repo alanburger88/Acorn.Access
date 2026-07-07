@@ -125,6 +125,9 @@ export function buildOpenApiDocument(ctx: PlatformContext): Dict {
       { name: 'migration', description: 'Migration Studio: legacy ingestion, rationalization, parallel-run' },
       { name: 'agent-desk', description: 'Contact-center assist (audited on-behalf actions)' },
       { name: 'lifecycle', description: 'Retention sweeps and GDPR erasure' },
+      { name: 'batch', description: 'High-volume batch production with checkpointed resume' },
+      { name: 'mapping', description: 'Data mapping profiles and suggestions' },
+      { name: 'replication', description: 'Offsite WORM archive replication' },
       { name: 'viewer (public)', description: 'Secure-link viewer (token-authorized, no API key)' },
       { name: 'meta', description: 'Service metadata' },
     ],
@@ -760,6 +763,83 @@ export function buildOpenApiDocument(ctx: PlatformContext): Dict {
           parameters: [idParam],
           requestSchema: { type: 'object', required: ['note'], properties: { note: { type: 'string' } } },
         }),
+      },
+      // -- batch production ----------------------------------------------------
+      '/v1/batches': {
+        post: op({
+          tag: 'batch',
+          summary: 'Run a batch through compose(+deliver) with a bounded worker pool',
+          requestSchema: {
+            type: 'object',
+            required: ['templateId', 'records'],
+            properties: {
+              templateId: { type: 'string' },
+              records: { type: 'array', items: { type: 'object' } },
+              concurrency: { type: 'integer' },
+              deliver: { type: 'boolean' },
+              mappingProfileId: { type: 'string' },
+            },
+          },
+        }),
+        get: op({ tag: 'batch', summary: 'List batch runs' }),
+      },
+      '/v1/batches/{id}': { get: op({ tag: 'batch', summary: 'Get a batch run', parameters: [idParam] }) },
+      '/v1/batches/{id}/pause': { post: op({ tag: 'batch', summary: 'Pause a running batch', parameters: [idParam] }) },
+      '/v1/batches/{id}/resume': {
+        post: op({
+          tag: 'batch',
+          summary: 'Resume a paused/failed batch from its checkpoint',
+          parameters: [idParam],
+          requestSchema: {
+            type: 'object',
+            required: ['records'],
+            properties: { records: { type: 'array', items: { type: 'object' } } },
+          },
+        }),
+      },
+      // -- mapping profiles ----------------------------------------------------
+      '/v1/mapping-profiles': {
+        post: op({
+          tag: 'mapping',
+          summary: 'Create a mapping profile (targets validated against the data contract)',
+          requestSchema: {
+            type: 'object',
+            required: ['templateId', 'name', 'rules'],
+            properties: {
+              templateId: { type: 'string' },
+              name: { type: 'string' },
+              rules: { type: 'array', items: { type: 'object' } },
+            },
+          },
+        }),
+        get: op({ tag: 'mapping', summary: 'List mapping profiles (?templateId=)' }),
+      },
+      '/v1/mapping-profiles/{id}': { get: op({ tag: 'mapping', summary: 'Get a mapping profile', parameters: [idParam] }) },
+      '/v1/mapping-profiles/suggest': {
+        post: op({
+          tag: 'mapping',
+          summary: 'Suggest rules mapping a sample record onto a template data contract',
+          requestSchema: {
+            type: 'object',
+            required: ['templateId', 'sampleRecord'],
+            properties: { templateId: { type: 'string' }, sampleRecord: { type: 'object' } },
+          },
+        }),
+      },
+      '/v1/mapping-profiles/{id}/apply': {
+        post: op({
+          tag: 'mapping',
+          summary: 'Dry-run a profile against one record',
+          parameters: [idParam],
+          requestSchema: { type: 'object', required: ['record'], properties: { record: { type: 'object' } } },
+        }),
+      },
+      // -- replication ---------------------------------------------------------
+      '/v1/replication/status': {
+        get: op({ tag: 'replication', summary: 'Replication target status and per-communication records' }),
+      },
+      '/v1/deliveries/tick': {
+        post: op({ tag: 'deliveries', summary: 'Promote due scheduled deliveries (ops/testing)' }),
       },
       // -- lifecycle ----------------------------------------------------------
       '/v1/lifecycle/sweep': {

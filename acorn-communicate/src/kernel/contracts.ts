@@ -21,6 +21,8 @@ export interface Tenant {
     defaultLocale: string;
     quietHours?: { start: string; end: string }; // "21:00" local
     aiEnabled: boolean;
+    /** defer deliveries beyond this many per customer per UTC day (unset = uncapped) */
+    maxDeliveriesPerCustomerPerDay?: number;
   };
 }
 
@@ -343,7 +345,7 @@ export interface RenderArtifact {
 // Delivery
 // ---------------------------------------------------------------------------
 
-export type DeliveryStatus = 'queued' | 'sent' | 'delivered' | 'bounced' | 'failed';
+export type DeliveryStatus = 'queued' | 'scheduled' | 'sent' | 'delivered' | 'bounced' | 'failed';
 
 export interface DeliveryAttempt {
   id: string; // dlv_
@@ -361,6 +363,10 @@ export interface DeliveryAttempt {
   failureReason?: string;
   /** set when this attempt was a failover from another channel */
   failoverFrom?: Channel;
+  /** status 'scheduled': when the deferred delivery should execute */
+  scheduledFor?: string;
+  /** why the delivery was deferred (audit/ops visibility) */
+  deferReason?: 'explicit-schedule' | 'quiet-hours' | 'frequency-cap';
 }
 
 export interface SecureLink {
@@ -727,11 +733,19 @@ export interface DeliveryService {
    * Orchestrate delivery: resolve channel plan from request + preferences,
    * enforce consent, create a secure link, attempt channels in order with
    * failover, retry transient failures, emit delivery.* events.
+   *
+   * Scheduling: an explicit `scheduleAt` in the future defers the send (one
+   * 'scheduled' attempt row carrying scheduledFor); tenant quiet hours
+   * (settings.quietHours) defer outbound message channels (email/sms) that
+   * would fire inside the window to the window's end; a tenant
+   * maxDeliveriesPerCustomerPerDay cap defers overflow to the next day.
+   * tick() promotes due scheduled attempts by running the normal orchestration.
    */
   deliver(args: {
     tenantId: string;
     communicationId: string;
     channels?: Channel[];
+    scheduleAt?: string;
   }): Promise<DeliveryAttempt[]>;
   listAttempts(tenantId: string, communicationId?: string): DeliveryAttempt[];
   getSecureLink(tenantId: string, communicationId: string): SecureLink | undefined;
@@ -741,6 +755,8 @@ export interface DeliveryService {
     attemptId: string;
     status: 'delivered' | 'bounced';
   }): Promise<DeliveryAttempt>;
+  /** Execute scheduled deliveries whose time has come. Returns count promoted. */
+  tick(now?: number): Promise<number>;
 }
 
 export interface ViewerService {
@@ -822,6 +838,8 @@ export interface IngestionService {
     sourceFormat: 'json' | 'csv';
     payload: string;
     deliver?: boolean;
+    /** optional mapping profile applied to each record before validation */
+    mappingProfileId?: string;
   }): Promise<IngestionJob>;
   getJob(ctx: RequestCtx, jobId: string): IngestionJob;
   listJobs(ctx: RequestCtx): IngestionJob[];
@@ -1244,4 +1262,104 @@ export interface ReplicationService {
   /** Replicate one archived communication's manifest + artifacts. */
   replicate(tenantId: string, communicationId: string): Promise<ReplicationRecord>;
   status(ctx: RequestCtx): { enabled: boolean; replicated: number; failed: number; records: ReplicationRecord[] };
+}
+
+// ---------------------------------------------------------------------------
+// High-volume batch production (tier 6) — platform/04 batch pipeline
+// ---------------------------------------------------------------------------
+
+export interface BatchRun {
+  id: string; // bat_
+  tenantId: string;
+  templateId: string;
+  status: 'running' | 'completed' | 'failed' | 'paused';
+  concurrency: number;
+  total: number;
+  /** records fully processed (compose + optional deliver) — the checkpoint */
+  processed: number;
+  succeeded: number;
+  errors: { record: number; message: string }[];
+  deliver: boolean;
+  startedAt: string;
+  completedAt?: string;
+  /** throughput snapshot at completion */
+  perSecond?: number;
+  communicationIds: string[];
+}
+
+export interface BatchService {
+  /**
+   * Run a batch of records through compose(+deliver) with a bounded worker
+   * pool. The run checkpoints `processed` as it goes; a crash/pause can be
+   * resumed with resume() which skips already-processed records
+   * (platform/11: checkpointed restartability).
+   */
+  run(
+    ctx: RequestCtx,
+    args: {
+      templateId: string;
+      records: Record<string, unknown>[];
+      concurrency?: number; // default 8, max 32
+      deliver?: boolean; // default true
+      mappingProfileId?: string; // applied per record before compose
+    },
+  ): Promise<BatchRun>;
+  /** Continue a paused/failed run from its checkpoint (records re-supplied by caller). */
+  resume(ctx: RequestCtx, batchId: string, records: Record<string, unknown>[]): Promise<BatchRun>;
+  pause(ctx: RequestCtx, batchId: string): BatchRun;
+  get(ctx: RequestCtx, batchId: string): BatchRun;
+  list(ctx: RequestCtx): BatchRun[];
+}
+
+// ---------------------------------------------------------------------------
+// Data mapping profiles (tier 6) — platform/05 ingestion mapping
+// ---------------------------------------------------------------------------
+
+export type MappingTransform =
+  | { kind: 'copy'; source: string }
+  | { kind: 'number'; source: string }
+  | { kind: 'trim'; source: string }
+  | { kind: 'date-iso'; source: string } // parse to YYYY-MM-DD
+  | { kind: 'concat'; sources: string[]; separator?: string }
+  | { kind: 'constant'; value: unknown };
+
+export interface MappingRule {
+  /** dot path in the template's data contract */
+  target: string;
+  transform: MappingTransform;
+}
+
+export interface MappingProfile {
+  id: string; // map_
+  tenantId: string;
+  templateId: string;
+  name: string;
+  rules: MappingRule[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MappingSuggestion {
+  target: string;
+  transform: MappingTransform | null; // null = no confident source found
+  confidence: number; // 0..1 name-similarity score
+  sample?: unknown;
+}
+
+export interface MappingService {
+  create(
+    ctx: RequestCtx,
+    args: { templateId: string; name: string; rules: MappingRule[] },
+  ): MappingProfile;
+  update(ctx: RequestCtx, profileId: string, rules: MappingRule[]): MappingProfile;
+  get(ctx: RequestCtx, profileId: string): MappingProfile;
+  list(ctx: RequestCtx, templateId?: string): MappingProfile[];
+  /**
+   * Suggest rules mapping a messy source record onto the template's data
+   * contract via normalized field-name similarity (platform/05 AI-assisted
+   * mapping — deterministic heuristic in the reference implementation).
+   */
+  suggest(ctx: RequestCtx, templateId: string, sampleRecord: Record<string, unknown>): MappingSuggestion[];
+  /** Apply a profile to one source record, producing a contract-shaped record. */
+  apply(tenantId: string, profileId: string, record: Record<string, unknown>): Record<string, unknown>;
 }

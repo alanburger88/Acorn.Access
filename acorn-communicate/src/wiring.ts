@@ -28,6 +28,8 @@ import { createMigrationService, registerMigrationRoutes } from './domains/migra
 import { createAgentDeskService, registerAgentDeskRoutes } from './domains/agent-desk/index.js';
 import { createLifecycleService, registerLifecycleRoutes } from './domains/lifecycle/index.js';
 import { createReplicationService, registerReplicationRoutes } from './domains/replication/index.js';
+import { createBatchService, registerBatchRoutes } from './domains/batch/index.js';
+import { createMappingService, registerMappingRoutes } from './domains/mapping/index.js';
 import { installMetrics } from './api/metrics.js';
 
 /**
@@ -58,6 +60,8 @@ export function wireServices(ctx: PlatformContext): void {
   ctx.services.agentDesk = createAgentDeskService(ctx);
   ctx.services.lifecycle = createLifecycleService(ctx);
   ctx.services.replication = createReplicationService(ctx);
+  ctx.services.mapping = createMappingService(ctx);
+  ctx.services.batch = createBatchService(ctx);
 }
 
 export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): void {
@@ -85,5 +89,7 @@ export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): v
   registerAgentDeskRoutes(app, ctx);
   registerLifecycleRoutes(app, ctx);
   registerReplicationRoutes(app, ctx);
+  registerBatchRoutes(app, ctx);
+  registerMappingRoutes(app, ctx);
   installMetrics(app, ctx);
 }

@@ -63,6 +63,9 @@ npm run build    # strict typecheck
 | `replication` | **Offsite WORM replication** of archived communications to S3-compatible storage: hand-rolled AWS SigV4 (verified against the official test vector), retry, per-communication status, `ACORN_S3_*` env |
 | `api/metrics` | **Prometheus `/metrics`** (route-pattern-bounded HTTP counters/durations, event counters, collection/process gauges) and `x-request-id` propagation |
 | hardening | Webhook **SSRF guard** (loopback/link-local/private targets rejected in production), **timing-safe** secure-link token and OTP comparison |
+| `delivery` (orchestration) | **Scheduled delivery** (explicit `scheduleAt`), **quiet-hours deferral** for outbound message channels, per-customer **daily frequency caps**, promotion scheduler tick |
+| `batch` | High-volume batch production: bounded worker pool, per-record errors, **checkpointed pause/resume without re-processing**, throughput reporting |
+| `mapping` | Data mapping profiles: transform rules (number/date-iso/trim/concat/constant), **auto-suggestion by field-name similarity**, dry-run apply, wired into ingestion |
 
 ## API
 

@@ -6,6 +6,7 @@ import type {
   AiGateway,
   AnalyticsService,
   ArchiveService,
+  BatchService,
   CompositionService,
   ContentService,
   DeliveryService,
@@ -13,6 +14,7 @@ import type {
   IngestionService,
   JourneyService,
   LifecycleService,
+  MappingService,
   MigrationService,
   NbaService,
   PrintService,
@@ -74,6 +76,8 @@ export interface PlatformServices {
   agentDesk: AgentDeskService;
   lifecycle: LifecycleService;
   replication: ReplicationService;
+  batch: BatchService;
+  mapping: MappingService;
 }
 
 export interface PlatformContext {

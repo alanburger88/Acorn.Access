@@ -17,6 +17,11 @@ setInterval(() => {
   ctx.services.lifecycle.sweep().catch((err) => app.log.error(err, 'lifecycle sweep failed'));
 }, 60_000).unref();
 
+// Scheduled-delivery promotion (explicit schedules, quiet hours, caps).
+setInterval(() => {
+  ctx.services.delivery.tick().catch((err) => app.log.error(err, 'delivery tick failed'));
+}, 10_000).unref();
+
 app
   .listen({ port: config.port, host: '0.0.0.0' })
   .then(() => {
