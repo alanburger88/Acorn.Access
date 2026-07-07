@@ -173,6 +173,48 @@ const views = {
     <p class="mut">Reference unit rates per the platform cost model — estimation only, not a bill.</p>`;
     $('#psel').onchange=()=>{window.__usagePeriod=$('#psel').value;route('usage');};
   },
+  async migration(){
+    main.innerHTML=`<h2>Migration studio</h2>
+    <div class="row"><div>
+      <label>Name <input id="mname" class="f" placeholder="Legacy statement"></label>
+      <label>Format <select id="mfmt" class="f"><option>html</option><option>text</option></select></label>
+      <p><button class="act" id="mingest">Ingest</button> <button class="act ghost" id="mdup">Duplicate report</button> <span id="mstat" class="mut"></span></p>
+    </div><div>
+      <textarea id="mpayload" rows="14" aria-label="Legacy document" placeholder="Paste legacy HTML or plain text…"></textarea>
+    </div></div><div id="detail"></div><h2>Jobs</h2><div id="mjobs"></div>`;
+    const renderJobs = async ()=>{
+      const jobs = await api('/v1/migration/jobs');
+      $('#mjobs').innerHTML=`<table><thead><tr><th>Name</th><th>Format</th><th>Status</th><th>Complexity</th><th>Effort (h)</th><th>Draft template</th><th>Created</th></tr></thead><tbody>
+      ${jobs.map(j=>`<tr><td>${esc(j.name)}</td><td>${esc(j.sourceFormat)}</td><td>${pill(j.status)}${j.error?` <span class="err">${esc(j.error)}</span>`:''}</td>
+      <td>${j.complexityScore}</td><td>${j.effortHours}</td><td>${j.draftTemplateId?`<code>${esc(j.draftTemplateId.slice(0,18))}…</code>`:'—'}</td><td>${when(j.createdAt)}</td></tr>`).join('')||'<tr><td colspan="7" class="mut">None yet — paste a legacy document above.</td></tr>'}
+      </tbody></table>`;
+    };
+    await renderJobs();
+    $('#mingest').onclick = async ()=>{
+      $('#mstat').textContent='ingesting…';
+      try{
+        const job = await api('/v1/migration/jobs',{method:'POST',body:JSON.stringify({name:$('#mname').value||'Legacy document',sourceFormat:$('#mfmt').value,payload:$('#mpayload').value})});
+        $('#mstat').textContent=`job ${job.status}`;
+        $('#detail').innerHTML=`<h2>Job result</h2>
+        <div class="cards">${card(job.complexityScore,'complexity (0-100)')}${card(job.effortHours+'h','estimated effort')}${card(job.extracted.variables.length,'variables detected')}${card(job.extracted.contentCandidates.length,'content candidates')}</div>
+        ${job.draftTemplateId?`<p>Draft template <code>${esc(job.draftTemplateId)}</code> created — stays a draft; the usual accessibility/publish gates apply (see Templates tab).</p>`:''}
+        ${job.error?`<p class="err">${esc(job.error)}</p>`:''}
+        <h2>Variables</h2><table><thead><tr><th>Path</th><th>Kind</th><th>Sample</th></tr></thead><tbody>
+        ${job.extracted.variables.map(v=>`<tr><td><code>${esc(v.path)}</code></td><td>${esc(v.kind)}</td><td>${esc(v.sample)}</td></tr>`).join('')||'<tr><td colspan="3" class="mut">None detected</td></tr>'}</tbody></table>
+        <h2>Content candidates</h2><table><thead><tr><th>Candidate</th><th>Library match</th></tr></thead><tbody>
+        ${job.extracted.contentCandidates.map(c=>`<tr><td>${esc(c.title)}<br><span class="mut">${esc(c.body.slice(0,140))}${c.body.length>140?'…':''}</span></td>
+        <td>${c.similarTo?`<span class="pill bad">${(c.similarTo.similarity*100).toFixed(0)}% similar</span> to <code>${esc(c.similarTo.contentKey)}</code> — consider reusing the approved content`:'<span class="mut">no match</span>'}</td></tr>`).join('')||'<tr><td colspan="2" class="mut">None</td></tr>'}</tbody></table>`;
+        await renderJobs();
+      }catch(e){$('#mstat').innerHTML='<span class="err">'+esc(e.message)+'</span>';}
+    };
+    $('#mdup').onclick = async ()=>{
+      try{
+        const pairs = await api('/v1/migration/duplicate-report');
+        $('#detail').innerHTML=`<h2>Duplicate report (approved content, Jaccard ≥ 0.7)</h2><table><thead><tr><th>Content A</th><th>Content B</th><th>Similarity</th></tr></thead><tbody>
+        ${pairs.map(p=>`<tr><td><code>${esc(p.aKey)}</code></td><td><code>${esc(p.bKey)}</code></td><td>${(p.similarity*100).toFixed(1)}%</td></tr>`).join('')||'<tr><td colspan="3" class="mut">No near-duplicates found</td></tr>'}</tbody></table>`;
+      }catch(e){$('#detail').innerHTML=`<p class="err">${esc(e.message)}</p>`;}
+    };
+  },
 };
 
 const card=(v,l)=>`<div class="card"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
@@ -211,7 +253,7 @@ window.evidence = async (id)=>{
   $('#detail').innerHTML = `<h2>Evidence pack — chain ${p.eventChain.intact?'intact ✓':'BROKEN ✗'}</h2><pre>${esc(JSON.stringify(p,null,2))}</pre>`;
 };
 
-const tabs = ['dashboard','communications','templates','content','customers','deliveries','journeys','print','archive','ingest','usage'];
+const tabs = ['dashboard','communications','templates','content','customers','deliveries','journeys','print','archive','ingest','usage','migration'];
 let current='dashboard';
 $('#nav').innerHTML = tabs.map(t=>`<button data-t="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('');
 $('#nav').addEventListener('click',(e)=>{const t=e.target.dataset?.t;if(t)route(t);});
