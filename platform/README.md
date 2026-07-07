@@ -36,6 +36,11 @@ end-customer accessibility layer.
 | 09 | [Migration Strategy](./09-migration-strategy.md) | Migration & modernization strategy (Migration Studio), parallel-run verification |
 | 10 | [Roadmap & Cost Model](./10-roadmap-cost-model.md) | Phased roadmap, cost model, unit economics, FinOps |
 | 11 | [Test Strategy & Operations](./11-test-and-operations.md) | Test strategy, performance benchmarks, operational runbooks, developer documentation outline |
+| 12 | [Capability Coverage Matrix](./12-capability-coverage.md) | PRD requirement → implementation status across every domain; output-format and channel coverage; simulated-vs-production seams |
+
+## Working implementation
+
+A tested, runnable implementation of this design lives in [`../acorn-communicate/`](../acorn-communicate/README.md) — a modular monolith across the bounded contexts in doc 04, with three operator web apps, the interactive customer viewer, REST/GraphQL/MCP/webhook surfaces, and swappable storage. See doc 12 for exactly what is implemented, simulated, or designed-only.
 
 ## The four pillars
 
