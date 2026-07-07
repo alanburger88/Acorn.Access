@@ -1,0 +1,883 @@
+<meta charset="utf-8">
+<title>Acorn OS — Sales Presentation</title>
+<style>
+  /* ============================================================
+     ACORN OS · Sales deck
+     Deep-pine ground + burnished acorn-gold accent.
+     Serif authority (statements/records) × mono precision (audit trail).
+     ============================================================ */
+
+  :root{
+    --ground:#0d1c15;
+    --ground-2:#0a170f;
+    --panel:#14271d;
+    --panel-2:#1a3226;
+    --ink:#eef2ea;
+    --ink-dim:#cdd8cf;
+    --muted:#9db3a4;
+    --gold:#d8a24a;
+    --gold-soft:#e8c789;
+    --gold-deep:#b9812f;
+    --sage:#7fb99a;
+    --line:rgba(160,190,170,.16);
+    --line-strong:rgba(160,190,170,.30);
+    --glow:rgba(216,162,74,.14);
+    --ok:#7fc79b;
+    --serif:'Iowan Old Style','Palatino Linotype',Palatino,'Palatino LT STD',Georgia,'Times New Roman',serif;
+    --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+    --mono:ui-monospace,'SF Mono','Cascadia Code','Roboto Mono',Menlo,Consolas,monospace;
+    --maxw:1180px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --ground:#e9ece3;
+      --ground-2:#dfe3d7;
+      --panel:#ffffff;
+      --panel-2:#f4f6ef;
+      --ink:#15271d;
+      --ink-dim:#33453a;
+      --muted:#5b6c60;
+      --gold:#a9762a;
+      --gold-soft:#8a5f1f;
+      --gold-deep:#8a5f1f;
+      --sage:#2f6b4f;
+      --line:rgba(20,40,28,.14);
+      --line-strong:rgba(20,40,28,.26);
+      --glow:rgba(169,118,42,.12);
+      --ok:#2f6b4f;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0d1c15;--ground-2:#0a170f;--panel:#14271d;--panel-2:#1a3226;
+    --ink:#eef2ea;--ink-dim:#cdd8cf;--muted:#9db3a4;--gold:#d8a24a;--gold-soft:#e8c789;
+    --gold-deep:#b9812f;--sage:#7fb99a;--line:rgba(160,190,170,.16);--line-strong:rgba(160,190,170,.30);
+    --glow:rgba(216,162,74,.14);--ok:#7fc79b;
+  }
+  :root[data-theme="light"]{
+    --ground:#e9ece3;--ground-2:#dfe3d7;--panel:#ffffff;--panel-2:#f4f6ef;
+    --ink:#15271d;--ink-dim:#33453a;--muted:#5b6c60;--gold:#a9762a;--gold-soft:#8a5f1f;
+    --gold-deep:#8a5f1f;--sage:#2f6b4f;--line:rgba(20,40,28,.14);--line-strong:rgba(20,40,28,.26);
+    --glow:rgba(169,118,42,.12);--ok:#2f6b4f;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:var(--sans);
+    background:var(--ground);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+
+  /* ---- ambient growth-rings canvas ---- */
+  #rings{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none;opacity:.9}
+  @media (prefers-reduced-motion: no-preference){
+    #rings{animation:breathe 22s ease-in-out infinite}
+  }
+  @keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+
+  /* ---- deck & slides ---- */
+  .deck{position:fixed;inset:0;z-index:1}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    padding:clamp(2.2rem,5.5vh,4rem) clamp(1.6rem,6vw,6rem);
+    align-items:center;
+  }
+  .slide.active{display:flex}
+  .slide-inner{width:100%;max-width:var(--maxw);margin:0 auto;max-height:100%;overflow:auto;scrollbar-width:none}
+  .slide-inner::-webkit-scrollbar{display:none}
+  .center .slide-inner{text-align:center}
+
+  /* ---- typography ---- */
+  .eyebrow{
+    font-family:var(--mono);
+    font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--gold);
+    display:inline-flex;align-items:center;gap:.6rem;
+    margin:0 0 1.4rem;
+  }
+  .eyebrow::before{content:"";width:1.6rem;height:1px;background:var(--gold);opacity:.7}
+  .center .eyebrow{justify-content:center}
+
+  h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;margin:0}
+  .display{
+    font-family:var(--serif);font-weight:600;
+    font-size:clamp(3.4rem,8.5vw,7.2rem);
+    line-height:.98;letter-spacing:-.015em;
+  }
+  h1.head{font-size:clamp(2rem,4.6vw,3.7rem);line-height:1.04;letter-spacing:-.01em;max-width:16ch}
+  .center h1.head{max-width:22ch;margin-inline:auto}
+  h2.sub{font-size:clamp(1.25rem,2.5vw,2rem);line-height:1.12;color:var(--ink)}
+  .lede{
+    font-size:clamp(1.05rem,1.5vw,1.35rem);
+    line-height:1.5;color:var(--ink-dim);max-width:60ch;margin:1.3rem 0 0;
+  }
+  .center .lede{margin-inline:auto}
+  p{margin:0}
+
+  .rule{height:1px;background:var(--line-strong);border:0;margin:1.6rem 0}
+  .gold-tick{color:var(--gold)}
+
+  /* ---- cover ---- */
+  .cover .brandline{display:flex;align-items:center;gap:.85rem;margin-bottom:2.2rem}
+  .cover .display{margin:.2rem 0}
+  .cover .tagline{
+    font-family:var(--serif);font-style:italic;
+    font-size:clamp(1.4rem,3.2vw,2.5rem);line-height:1.15;color:var(--gold-soft);
+    margin:1.4rem 0 0;letter-spacing:-.01em;
+  }
+  .cover .principle{
+    font-family:var(--mono);font-size:clamp(.8rem,1.3vw,1rem);letter-spacing:.04em;
+    color:var(--muted);margin:1.8rem 0 0;
+  }
+  .cover-foot{
+    position:absolute;left:clamp(1.6rem,6vw,6rem);right:clamp(1.6rem,6vw,6rem);
+    bottom:clamp(4rem,9vh,6rem);
+    display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;
+    font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+  }
+
+  /* ---- grids & cards ---- */
+  .grid{display:grid;gap:clamp(.8rem,1.4vw,1.15rem);margin-top:2rem}
+  .cols-2{grid-template-columns:repeat(2,1fr)}
+  .cols-3{grid-template-columns:repeat(3,1fr)}
+  .cols-4{grid-template-columns:repeat(4,1fr)}
+  @media (max-width:820px){.cols-2,.cols-3,.cols-4{grid-template-columns:1fr}}
+
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel-2));
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:clamp(1.05rem,1.6vw,1.5rem);
+    position:relative;
+    overflow:hidden;
+  }
+  .card .k+*{margin-top:.5rem}
+  .card .k{
+    font-family:var(--mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);
+    display:block;margin-bottom:.6rem;
+  }
+  .card h3{font-size:clamp(1.15rem,1.7vw,1.45rem);line-height:1.1}
+  .card p{color:var(--muted);font-size:.98rem;line-height:1.45;margin-top:.5rem}
+  .card.big h3{font-size:clamp(1.3rem,2vw,1.7rem)}
+
+  /* pillar accent glow */
+  .pillar::after{
+    content:"";position:absolute;inset:auto -30% -60% auto;width:60%;height:120%;
+    background:radial-gradient(circle,var(--glow),transparent 68%);pointer-events:none;
+  }
+
+  /* feature list */
+  .flist{list-style:none;margin:1.8rem 0 0;padding:0;display:flex;flex-direction:column;gap:1rem;max-width:60ch}
+  .flist li{display:flex;gap:.95rem;align-items:flex-start;line-height:1.4}
+  .flist .mk{
+    flex:0 0 auto;margin-top:.15rem;color:var(--gold);
+    width:1.35rem;height:1.35rem;
+  }
+  .flist strong{font-weight:600;color:var(--ink)}
+  .flist span.d{color:var(--muted);font-size:.97rem}
+
+  /* two-world comparison */
+  .worlds{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(1rem,2.4vw,2.4rem);align-items:stretch;margin-top:2rem}
+  @media (max-width:820px){.worlds{grid-template-columns:1fr;gap:1rem}}
+  .world{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:clamp(1.1rem,1.8vw,1.7rem)}
+  .world.new{border-color:var(--gold);box-shadow:0 0 0 1px rgba(216,162,74,.25),0 18px 50px -30px rgba(216,162,74,.5)}
+  .world .wk{font-family:var(--mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+  .world.new .wk{color:var(--gold)}
+  .world ul{list-style:none;margin:1rem 0 0;padding:0;display:flex;flex-direction:column;gap:.7rem}
+  .world li{display:flex;gap:.6rem;align-items:baseline;color:var(--ink-dim);line-height:1.35}
+  .world li::before{content:"";width:5px;height:5px;border-radius:50%;background:var(--muted);flex:0 0 auto;transform:translateY(-2px)}
+  .world.new li::before{background:var(--gold)}
+  .world.new li{color:var(--ink)}
+  .arrow{align-self:center;color:var(--gold);font-family:var(--serif);font-size:2rem}
+  @media (max-width:820px){.arrow{transform:rotate(90deg)}}
+
+  /* metric strip */
+  .metrics{display:flex;flex-wrap:wrap;gap:.7rem;margin-top:2rem}
+  .metric{
+    flex:1 1 auto;min-width:120px;
+    border:1px solid var(--line);border-radius:10px;padding:1rem 1.1rem;background:var(--panel);
+  }
+  .metric .n{font-family:var(--serif);font-size:clamp(1.7rem,3vw,2.6rem);line-height:1;color:var(--gold);font-variant-numeric:tabular-nums}
+  .metric .l{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:.55rem;display:block}
+
+  /* outcome chips */
+  .chips{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:2rem}
+  .chip{
+    font-family:var(--mono);font-size:.82rem;letter-spacing:.02em;
+    padding:.55rem 1rem;border:1px solid var(--line-strong);border-radius:999px;color:var(--ink);
+    background:var(--panel);
+  }
+  .chip .dot{color:var(--gold);margin-right:.5rem}
+
+  /* comparison table */
+  .cmp{width:100%;border-collapse:collapse;margin-top:1.8rem;font-size:.98rem}
+  .cmp th,.cmp td{padding:.75rem .9rem;text-align:left;border-bottom:1px solid var(--line)}
+  .cmp thead th{font-family:var(--mono);font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .cmp thead th.us{color:var(--gold)}
+  .cmp td.dim{color:var(--muted)}
+  .cmp td.us{color:var(--ink);font-weight:600}
+  .cmp tbody tr:hover{background:rgba(160,190,170,.05)}
+  .cmp .rowlabel{font-weight:600;color:var(--ink)}
+  .yes{color:var(--gold)}
+  .no{color:var(--muted);opacity:.7}
+
+  /* device mock (interactive doc) */
+  .split{display:grid;grid-template-columns:1.05fr .95fr;gap:clamp(1.4rem,3vw,3rem);align-items:center;margin-top:1.4rem}
+  @media (max-width:900px){.split{grid-template-columns:1fr}}
+  .doc-mock{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    box-shadow:0 30px 70px -40px rgba(0,0,0,.7);
+  }
+  .doc-mock .bar{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border-bottom:1px solid var(--line);background:var(--panel-2)}
+  .doc-mock .bar i{width:9px;height:9px;border-radius:50%;background:var(--line-strong);display:inline-block}
+  .doc-mock .bar .u{margin-left:auto;font-family:var(--mono);font-size:.64rem;color:var(--muted);letter-spacing:.08em}
+  .doc-body{padding:1.2rem 1.3rem;display:flex;flex-direction:column;gap:.7rem}
+  .doc-body .h{font-family:var(--serif);font-size:1.15rem}
+  .doc-row{display:flex;justify-content:space-between;font-size:.85rem;color:var(--muted);padding:.3rem 0;border-bottom:1px dashed var(--line)}
+  .doc-row b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .doc-actions{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.4rem}
+  .btn-pay{background:var(--gold);color:#20160a;border:0;border-radius:8px;padding:.5rem .9rem;font:600 .82rem var(--sans);cursor:default}
+  .btn-ghost{background:transparent;color:var(--gold);border:1px solid var(--gold);border-radius:8px;padding:.5rem .9rem;font:600 .82rem var(--sans);cursor:default}
+  .assist{margin-top:.5rem;background:var(--ground-2);border:1px solid var(--line);border-radius:10px;padding:.7rem .8rem}
+  .assist .q{font-size:.8rem;color:var(--sage)}
+  .assist .a{font-size:.83rem;color:var(--ink-dim);margin-top:.35rem;line-height:1.4}
+  .assist .cite{font-family:var(--mono);font-size:.6rem;letter-spacing:.06em;color:var(--muted);margin-top:.45rem;text-transform:uppercase}
+
+  /* two-col trust */
+  .duo{display:grid;grid-template-columns:1fr 1fr;gap:clamp(1rem,2vw,1.6rem);margin-top:2rem}
+  @media (max-width:820px){.duo{grid-template-columns:1fr}}
+  .duo .col h3{font-size:1.15rem;display:flex;align-items:center;gap:.6rem}
+  .duo .col h3 .mono{font-family:var(--mono);font-size:.64rem;letter-spacing:.16em;color:var(--gold);border:1px solid var(--line-strong);border-radius:4px;padding:.15rem .45rem;text-transform:uppercase}
+  .duo ul{list-style:none;margin:1rem 0 0;padding:0;display:flex;flex-direction:column;gap:.6rem}
+  .duo li{display:flex;gap:.6rem;color:var(--ink-dim);font-size:.95rem;line-height:1.4}
+  .duo li::before{content:"✓";color:var(--gold);font-weight:700;flex:0 0 auto}
+
+  /* CTA */
+  .cta-box{margin-top:2rem;border:1px solid var(--gold);border-radius:14px;padding:clamp(1.3rem,2.4vw,2rem);background:linear-gradient(180deg,rgba(216,162,74,.08),transparent)}
+  .cta-box .steps{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:1.1rem}
+  .cta-box .step{font-family:var(--mono);font-size:.78rem;color:var(--ink);border:1px solid var(--line-strong);border-radius:999px;padding:.5rem .95rem}
+  .cta-box .step b{color:var(--gold);margin-right:.45rem}
+
+  /* ---- chrome ---- */
+  .chrome-top{
+    position:fixed;top:0;left:0;right:0;z-index:5;
+    display:flex;align-items:center;gap:.7rem;
+    padding:clamp(1rem,2.2vh,1.4rem) clamp(1.6rem,6vw,6rem);
+    pointer-events:none;
+  }
+  .wordmark{display:flex;align-items:center;gap:.6rem;font-family:var(--serif);font-size:1.05rem;letter-spacing:-.01em}
+  .wordmark .os{color:var(--gold)}
+  .acorn{width:22px;height:26px;flex:0 0 auto}
+
+  .chrome-bottom{
+    position:fixed;left:0;right:0;bottom:0;z-index:5;
+    display:flex;align-items:center;gap:1rem;
+    padding:clamp(.8rem,2vh,1.2rem) clamp(1.6rem,6vw,6rem);
+  }
+  .counter{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;color:var(--muted);font-variant-numeric:tabular-nums}
+  .counter b{color:var(--gold)}
+  .dots{display:flex;gap:6px;flex:1;flex-wrap:wrap}
+  .dots button{width:7px;height:7px;padding:0;border:0;border-radius:50%;background:var(--line-strong);cursor:pointer;transition:transform .2s,background .2s}
+  .dots button.on{background:var(--gold);transform:scale(1.35)}
+  .dots button:hover{background:var(--sage)}
+  .ctrls{display:flex;gap:.4rem;align-items:center}
+  .ctrls button{
+    background:var(--panel);border:1px solid var(--line);color:var(--ink);
+    font:500 .72rem var(--mono);letter-spacing:.08em;text-transform:uppercase;
+    padding:.42rem .7rem;border-radius:7px;cursor:pointer;transition:border-color .2s,color .2s;
+  }
+  .ctrls button:hover{border-color:var(--gold);color:var(--gold)}
+  .ctrls .nav{padding:.42rem .6rem;font-family:var(--sans);font-size:.95rem;line-height:1}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+
+  /* ---- speaker notes drawer ---- */
+  .notes-drawer{
+    position:fixed;left:0;right:0;bottom:0;z-index:20;
+    background:var(--ground-2);
+    border-top:1px solid var(--gold);
+    box-shadow:0 -20px 60px -30px rgba(0,0,0,.8);
+    transform:translateY(102%);transition:transform .34s cubic-bezier(.2,.7,.2,1);
+    max-height:46vh;overflow:auto;
+    padding:1.2rem clamp(1.6rem,6vw,6rem) 1.6rem;
+  }
+  .notes-drawer.open{transform:translateY(0)}
+  .notes-drawer .nh{display:flex;align-items:center;gap:.7rem;margin-bottom:.8rem}
+  .notes-drawer .nh .tag{font-family:var(--mono);font-size:.66rem;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+  .notes-drawer .nh .sn{font-family:var(--mono);font-size:.66rem;color:var(--muted);margin-left:auto}
+  .notes-drawer .nbody{font-size:.98rem;line-height:1.6;color:var(--ink-dim);max-width:78ch}
+  .notes-drawer .nbody strong{color:var(--ink);font-weight:600}
+  .notes-drawer .nbody em{color:var(--gold-soft);font-style:italic}
+
+  aside.notes{display:none}
+
+  .hint{
+    position:fixed;right:clamp(1.6rem,6vw,6rem);top:clamp(1rem,2.2vh,1.4rem);z-index:5;
+    font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;color:var(--muted);text-transform:uppercase;
+    pointer-events:none;text-align:right;line-height:1.7;opacity:.75;
+  }
+  @media (max-width:820px){.hint{display:none}}
+
+  /* entrance animation */
+  [data-anim]{opacity:0;transform:translateY(16px)}
+  .slide.active [data-anim]{opacity:1;transform:none;transition:opacity .6s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+  @media (prefers-reduced-motion: reduce){
+    #rings{animation:none}
+    [data-anim]{opacity:1!important;transform:none!important;transition:none!important}
+  }
+
+  /* ---- print / export to PDF ---- */
+  @media print{
+    @page{size:A4 landscape;margin:12mm}
+    body{overflow:visible;background:#fff;color:#111}
+    #rings,.chrome-top,.chrome-bottom,.hint,.notes-drawer{display:none!important}
+    .deck{position:static}
+    .slide{position:static;display:block!important;page-break-after:always;min-height:auto;padding:0 0 8mm}
+    .slide-inner{max-width:none;overflow:visible;max-height:none}
+    [data-anim]{opacity:1!important;transform:none!important}
+    .card,.world,.metric,.doc-mock,.notes-print{break-inside:avoid}
+    aside.notes{
+      display:block;margin-top:8mm;padding-top:5mm;border-top:1px solid #bbb;
+      font-size:10.5pt;line-height:1.5;color:#333;
+    }
+    aside.notes::before{content:"SPEAKER NOTES";font:600 8pt var(--mono);letter-spacing:.16em;color:#8a5f1f;display:block;margin-bottom:4pt}
+    .display{color:#15271d}
+    .eyebrow,.metric .n,.yes,.gold-tick{color:#8a5f1f}
+  }
+</style>
+
+<canvas id="rings" aria-hidden="true"></canvas>
+
+<div class="chrome-top">
+  <div class="wordmark">
+    <svg class="acorn" viewBox="0 0 24 28" fill="none" aria-hidden="true">
+      <path d="M12 4.2 V1.6" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M4.2 10 C4.2 6.3 7.6 4.2 12 4.2 C16.4 4.2 19.8 6.3 19.8 10 Z" fill="var(--gold)" fill-opacity=".16" stroke="var(--gold)" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M4.6 10 H19.4" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M5.7 10 C5.7 16.4 8.3 22 12 24.9 C15.7 22 18.3 16.4 18.3 10" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span>Acorn&nbsp;<span class="os">OS</span></span>
+  </div>
+</div>
+
+<div class="hint">← → navigate<br>N&nbsp;·&nbsp;notes&nbsp;&nbsp;F&nbsp;·&nbsp;full&nbsp;&nbsp;P&nbsp;·&nbsp;pdf</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · COVER -->
+  <section class="slide cover center" data-bg="hero">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>AI-Native Customer Communication Platform</p>
+      <h1 class="display" data-anim>Acorn <span class="gold-tick">OS</span></h1>
+      <p class="tagline" data-anim>The communication layer for the AI era.</p>
+      <p class="principle" data-anim>Compose once&nbsp;·&nbsp;Personalize intelligently&nbsp;·&nbsp;Deliver everywhere</p>
+    </div>
+    <div class="cover-foot">
+      <span data-anim>CCM&nbsp;·&nbsp;CXM&nbsp;·&nbsp;IXM&nbsp;·&nbsp;AIXM · unified</span>
+      <span data-anim>Prepared for&nbsp;— &lt;client&gt;&nbsp;·&nbsp;&lt;date&gt;</span>
+    </div>
+    <aside class="notes"><strong>Open with the category, not the features.</strong> Acorn OS isn't a better document tool — it's the operating system for every customer communication. Plant one sentence: <em>"Every statement, bill, claim and notice becomes a secure, interactive, measurable experience."</em> Pause on the tagline. Then a hook question to the room: <em>how many of your customer communications are still one-way PDFs no one can act on?</em> Set expectation: 15 minutes, then a live look at the working product.</aside>
+  </section>
+
+  <!-- 2 · PROBLEM -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>The problem</p>
+      <h1 class="head" data-anim>Most CCM is a document factory with AI sprinkled on top like&nbsp;<span class="gold-tick">digital parsley.</span></h1>
+      <div class="grid cols-2" data-anim>
+        <div class="card"><span class="k">Static</span><h3>One-way documents</h3><p>PDFs and print streams the customer can read but never act on. The work ends where the outcome should begin.</p></div>
+        <div class="card"><span class="k">Siloed</span><h3>Channels don't talk</h3><p>Email, SMS, print and portal each run on different tools, with no shared preference, consent or journey.</p></div>
+        <div class="card"><span class="k">Slow</span><h3>Every change waits on IT</h3><p>A one-line wording update becomes a ticket, a release, and weeks of lead time.</p></div>
+        <div class="card"><span class="k">Risky</span><h3>Compliance & accessibility bolted on</h3><p>Audit trails, WCAG and proof-of-delivery are afterthoughts — and afterthoughts are where lawsuits live.</p></div>
+      </div>
+    </div>
+    <aside class="notes">Name the pain the buyer lives with every day. Legacy CCM — Quadient, OpenText Exstream, Precisely — was engineered to <strong>mass-produce documents</strong>. AI got bolted on as a feature, not a foundation. The result is on screen: static output, channel silos, IT bottlenecks, and compliance treated as remediation. The <em>"digital parsley"</em> line usually earns a laugh — use it, then turn serious: <strong>this architecture structurally cannot get you to interactive, outcome-driven communication.</strong> Ask which of these four hurts most today and let them pick — it tells you where to lean.</aside>
+  </section>
+
+  <!-- 3 · THE SHIFT -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>The shift</p>
+      <h1 class="head" data-anim>From producing documents to&nbsp;<span class="gold-tick">driving outcomes.</span></h1>
+      <div class="worlds" data-anim>
+        <div class="world">
+          <span class="wk">The old scorecard</span>
+          <ul>
+            <li>Documents produced</li>
+            <li>Pages printed</li>
+            <li>Batches delivered</li>
+            <li>SLA met</li>
+          </ul>
+        </div>
+        <div class="arrow" aria-hidden="true">→</div>
+        <div class="world new">
+          <span class="wk">The Acorn OS scorecard</span>
+          <ul>
+            <li>Customer understood</li>
+            <li>Payment completed</li>
+            <li>Renewal secured</li>
+            <li>Call avoided</li>
+          </ul>
+        </div>
+      </div>
+      <p class="lede" data-anim>Every template declares its intended outcome. Every journey and dashboard measures progress toward it.</p>
+    </div>
+    <aside class="notes">This is the reframe that moves the conversation from <strong>cost of production</strong> to <strong>business outcome</strong> — and it's the frame a CFO buys. A document is a means; the outcome is the point. In Acorn OS every template declares an intended outcome (payment, renewal, dispute resolved, "understood") and the platform measures the funnel to it. Line to land: <em>"You already spend millions producing communications — the only question is whether they produce results."</em> If the room is operations-led, this is where you win their sponsor; if it's finance-led, this is the whole pitch.</aside>
+  </section>
+
+  <!-- 4 · WHAT IT IS -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>What it is</p>
+      <h1 class="head" data-anim>Four disciplines, unified into one AI-native platform.</h1>
+      <div class="grid cols-4" data-anim>
+        <div class="card pillar"><span class="k">CCM</span><h3>Create</h3><p>Compose, manage content, approve, and produce — batch or on-demand — with full version control.</p></div>
+        <div class="card pillar"><span class="k">CXM</span><h3>Orchestrate</h3><p>Personalized journeys across every channel, with preference, consent and next-best-action built in.</p></div>
+        <div class="card pillar"><span class="k">IXM</span><h3>Interact</h3><p>The document itself becomes interactive — pay, dispute, sign, ask — inside the communication.</p></div>
+        <div class="card pillar"><span class="k">AIXM</span><h3>Intelligence</h3><p>Governed AI across the whole lifecycle: authoring, migration, compliance, accessibility, analytics.</p></div>
+      </div>
+      <p class="lede" data-anim>Usually four separate vendors. In Acorn OS: one core, one data model, one chain of custody.</p>
+    </div>
+    <aside class="notes">Acorn OS unifies four things that are normally four different purchases and four integration projects: <strong>CCM</strong> (create &amp; manage), <strong>CXM</strong> (orchestrate the journey), <strong>IXM</strong> (make the document interactive), and <strong>AIXM</strong> (AI across the lifecycle). Competitors own one or two and bolt on the rest. Don't drill into the acronyms — the payload is <strong>unification</strong>: one place, one governance model, one audit trail. Every seam you remove is an integration you don't maintain and a compliance gap you don't have. If they're currently stitching a CCM vendor to a CDP to a separate accessibility service, that's your wedge.</aside>
+  </section>
+
+  <!-- 5 · PRINCIPLE -->
+  <section class="slide center">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>The principle</p>
+      <h1 class="display" style="font-size:clamp(2.4rem,6vw,5rem)" data-anim>Compose once.<br>Personalize intelligently.<br><span class="gold-tick">Deliver everywhere.</span></h1>
+      <p class="lede" data-anim>Make every communication interactive, compliant, accessible, measurable and outcome-driven.</p>
+    </div>
+    <aside class="notes">This is the product philosophy in one breath — the sentence you want them repeating internally after you leave. <strong>Compose the master once</strong>; the platform renders it to an interactive web document, an accessible tagged PDF, email, SMS, print, and even a voice script — each personalized per customer, in the customer's language, on the customer's preferred channel, with failover. One source of truth, every channel, no re-authoring. Let this slide <em>breathe</em> — don't rush it. If you only get one idea to stick, make it this one.</aside>
+  </section>
+
+  <!-- 6 · INTERACTIVE DOCUMENT -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Product — the interactive document</p>
+      <h1 class="head" data-anim>The document becomes the&nbsp;<span class="gold-tick">experience.</span></h1>
+      <div class="split">
+        <div data-anim>
+          <ul class="flist">
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>Act inside the communication.</strong> <span class="d">Pay, dispute, upload, e-sign, update details — no portal to go find, no call to make.</span></div></li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>Understand it.</strong> <span class="d">Expandable sections, plain-language explanations, and guided next steps built into the page.</span></div></li>
+            <li><svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>Ask it anything.</strong> <span class="d">An embedded assistant answers from this document's approved content — and every tap is measured.</span></div></li>
+          </ul>
+        </div>
+        <div class="doc-mock" data-anim aria-label="Illustration of an interactive statement">
+          <div class="bar"><i></i><i></i><i></i><span class="u">secure · authenticated</span></div>
+          <div class="doc-body">
+            <div class="h">June statement — Ada O.</div>
+            <div class="doc-row"><span>New balance</span><b>$1,874.22</b></div>
+            <div class="doc-row"><span>Minimum due</span><b>$37.48</b></div>
+            <div class="doc-row"><span>Due date</span><b>Jul 25, 2026</b></div>
+            <div class="doc-actions">
+              <span class="btn-pay">Pay $37.48 now</span>
+              <span class="btn-ghost">Dispute a charge</span>
+              <span class="btn-ghost">Go paperless</span>
+            </div>
+            <div class="assist">
+              <div class="q">“When is my payment due and what's the minimum?”</div>
+              <div class="a">Your minimum payment of $37.48 is due on July&nbsp;25, 2026. Paying only the minimum means interest accrues on the rest.</div>
+              <div class="cite">Grounded · Account Summary · FAQ: minimum payment</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="notes"><strong>This is the demo moment.</strong> If the room is live, switch to the running viewer and do this for real — it lands ten times harder than the mock. The statement is not a dead PDF: the customer can pay, dispute, go paperless, e-sign, or simply ask a question and get an answer grounded in their own document. Every one of those interactions is captured. This is what converts a cost center into <strong>self-service and call deflection</strong>. Key line: <em>"The center of the experience is the communication itself — not a portal the customer has to log into and hunt through."</em> Tie back to their contact-center volume if you know it.</aside>
+  </section>
+
+  <!-- 7 · AI WITH RECEIPTS -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Product — AI, governed</p>
+      <h1 class="head" data-anim>AI that leaves fingerprints, receipts, and an&nbsp;<span class="gold-tick">audit trail.</span></h1>
+      <div class="grid cols-2" data-anim>
+        <div class="card big"><span class="k">Grounded</span><h3>Answers only from approved content</h3><p>The assistant is confined to the specific document and approved knowledge — and cites its sources every time.</p></div>
+        <div class="card big"><span class="k">Honest</span><h3>Never guesses on regulated content</h3><p>When it isn't confident, it says so and routes to a human. No hallucinated legal language, ever.</p></div>
+        <div class="card big"><span class="k">Accountable</span><h3>Every AI action is logged</h3><p>Prompts, models, citations and confidence are recorded to a tamper-evident audit trail.</p></div>
+        <div class="card big"><span class="k">Private</span><h3>No tenant data trains models</h3><p>Bring your own model, keep data in your boundary, and prove exactly what the AI touched.</p></div>
+      </div>
+    </div>
+    <aside class="notes">Regulated buyers are <strong>afraid</strong> of generative AI hallucinating on a legal disclosure — this slide is your answer, and it's often what gets you past the risk committee. The embedded assistant answers <em>only</em> from approved content and the specific document, cites its sources, and when it's unsure it <strong>refuses to guess and hands to a human</strong>. Every AI action is grounded, cited, confidence-scored and audited; no tenant data trains models by default. Contrast sharply with "AI features" bolted onto legacy tools that have no grounding and no audit. Line to use: <em>"Our AI leaves receipts — you can prove what it did, why, and where it got the answer."</em></aside>
+  </section>
+
+  <!-- 8 · DESIGN & GOVERN -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Product — author &amp; control</p>
+      <h1 class="head" data-anim>Business teams author. Governance is&nbsp;<span class="gold-tick">enforced, not hoped for.</span></h1>
+      <div class="grid cols-2" data-anim>
+        <div class="card"><span class="k">Author</span><h3>Drag-and-drop designer, with AI drafts you approve</h3><p>Business users build and change communications without an IT ticket. The AI proposes; a human always approves.</p></div>
+        <div class="card"><span class="k">Separate duties</span><h3>Role-based approvals &amp; segregation of duties</h3><p>The author can't approve their own work. Compliance and legal sign off before anything ships.</p></div>
+        <div class="card"><span class="k">Gate</span><h3>Accessibility gate blocks non-compliant publishing</h3><p>A communication that fails WCAG can't be published — the system enforces it, not a policy PDF.</p></div>
+        <div class="card"><span class="k">Prove</span><h3>Full version history &amp; impact analysis</h3><p>Every change is versioned, comparable, and reversible, with a clear record of who changed what and when.</p></div>
+      </div>
+    </div>
+    <aside class="notes">Two audiences win on this slide — sell to both. <strong>Business users</strong> get a modern drag-and-drop designer with an AI assistant that drafts copy they approve: no more IT tickets for a wording change, no more six-week release for a rate update. <strong>Compliance</strong> gets teeth: segregation of duties (author ≠ approver, enforced), and an accessibility gate that literally <em>blocks publication</em> of anything that fails WCAG. Governance stops being a policy document nobody reads and becomes something the platform enforces at publish time. If legal or risk is in the room, slow down here — this is their slide.</aside>
+  </section>
+
+  <!-- 9 · OUTCOMES -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Measure what matters</p>
+      <h1 class="head" data-anim>Every template declares an outcome.<br>Every dashboard&nbsp;<span class="gold-tick">measures it.</span></h1>
+      <div class="chips" data-anim>
+        <span class="chip"><span class="dot">●</span>Understood</span>
+        <span class="chip"><span class="dot">●</span>Paid</span>
+        <span class="chip"><span class="dot">●</span>Renewed</span>
+        <span class="chip"><span class="dot">●</span>Disputed &amp; resolved</span>
+        <span class="chip"><span class="dot">●</span>Signed</span>
+        <span class="chip"><span class="dot">●</span>Self-served</span>
+        <span class="chip"><span class="dot">●</span>Call avoided</span>
+      </div>
+      <div class="metrics" data-anim>
+        <div class="metric"><div class="n">1</div><span class="l">outcome per template</span></div>
+        <div class="metric"><div class="n">100%</div><span class="l">interactions captured</span></div>
+        <div class="metric"><div class="n">∞</div><span class="l">channels, one measure</span></div>
+      </div>
+      <p class="lede" data-anim>Report payment lift and call deflection — not pages produced.</p>
+    </div>
+    <aside class="notes">Come back to outcomes — this is the <strong>ROI narrative</strong> and the slide your champion screenshots for their CFO. Instead of "we produced four million statements," the report becomes payment completion, call deflection, paperless adoption, renewal rate, dispute-resolution time. The platform ties each communication to its declared outcome and shows the funnel — composed → delivered → viewed → acted → outcome. Frame the value math with their numbers if you have them: <em>even a few points of call deflection on their statement volume pays for the platform.</em> Don't invent client results — this is about the metrics the platform is built to move.</aside>
+  </section>
+
+  <!-- 10 · DIFFERENTIATION -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Why Acorn OS wins</p>
+      <h1 class="head" data-anim>Built AI-native. Not&nbsp;<span class="gold-tick">retrofitted.</span></h1>
+      <div style="overflow-x:auto" data-anim>
+        <table class="cmp">
+          <thead>
+            <tr><th>Capability</th><th>Legacy CCM suites</th><th class="us">Acorn OS</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="rowlabel">AI</td><td class="dim">Bolted-on feature</td><td class="us">Native core, governed &amp; audited</td></tr>
+            <tr><td class="rowlabel">The document</td><td class="dim">Static output</td><td class="us">Interactive experience</td></tr>
+            <tr><td class="rowlabel">Accessibility</td><td class="dim">Services engagement</td><td class="us">Enforced at publish (WCAG 2.2)</td></tr>
+            <tr><td class="rowlabel">Agent / MCP ready</td><td class="dim"><span class="no">—</span></td><td class="us"><span class="yes">Native MCP server &amp; client</span></td></tr>
+            <tr><td class="rowlabel">Measures</td><td class="dim">Documents produced</td><td class="us">Business outcomes</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lede" data-anim>Quadient · OpenText · Smart Communications · Precisely · Messagepoint · Doxim are strong at high-volume production. The architecture gap is AI, interactivity, accessibility and agent-readiness.</p>
+    </div>
+    <aside class="notes">Name the competitors directly — the buyer is almost certainly evaluating one of them, and dodging the comparison reads as weakness. Quadient, OpenText Exstream, Smart Communications, Precisely EngageOne, Messagepoint, Doxim: <strong>mature, credible, genuinely strong at high-volume batch production and print.</strong> Concede that openly — it builds trust. Then the gap: their AI is bolted on, the document is still static, accessibility is a professional-services line item, and there is no agent/MCP story at all. Acorn OS was built AI-native, interactive-first, accessible-by-default, and agent-ready from day one. You're <em>not</em> asking them to rip-and-replace overnight — pivot straight to the migration slide next to de-risk it.</aside>
+  </section>
+
+  <!-- 11 · TRUST -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Trust</p>
+      <h1 class="head" data-anim>Compliant and accessible by design — not by&nbsp;<span class="gold-tick">services engagement.</span></h1>
+      <div class="duo" data-anim>
+        <div class="col">
+          <h3><span class="mono">Compliance</span> Prove everything</h3>
+          <ul>
+            <li>Complete chain of custody for every communication</li>
+            <li>Proof of delivery, access, content, approval, version, AI changes &amp; customer action</li>
+            <li>Hash-chained, tamper-evident audit log</li>
+            <li>Legal hold, retention &amp; right-to-erasure built in</li>
+          </ul>
+        </div>
+        <div class="col">
+          <h3><span class="mono">Accessibility</span> By default</h3>
+          <ul>
+            <li>WCAG 2.2 AA as the product baseline</li>
+            <li>Accessible tagged PDF &amp; screen-reader-ready documents</li>
+            <li>Block-on-fail gates — non-compliant work can't publish</li>
+            <li>The Acorn.Access widget in every interactive document</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">For regulated industries this is frequently the <strong>deciding slide</strong>. Every communication carries a complete chain of custody — you can prove exactly what was sent, to whom, when, using which data, which template and content versions, and which approvals, all against a <strong>tamper-evident, hash-chained audit log</strong>. Accessibility isn't a remediation project billed by the hour; it's <em>enforced at publish time</em>. If the buyer is a bank, insurer, healthcare or government body, connect to their world: ADA/Section 508 and the growing wave of accessibility litigation and DOJ Title II rules — the cost they're trying to avoid is real and rising. Offer to walk their compliance team through an evidence pack in the follow-up.</aside>
+  </section>
+
+  <!-- 12 · MIGRATION -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Getting there</p>
+      <h1 class="head" data-anim>Migration is a modernization engine — not a lift-and-shift of&nbsp;<span class="gold-tick">old problems.</span></h1>
+      <div class="grid cols-3" data-anim>
+        <div class="card"><span class="k">Ingest</span><h3>AI reads your legacy estate</h3><p>Inspire, Exstream, DOC1, PDFs and print streams — parsed into modern, editable templates.</p></div>
+        <div class="card"><span class="k">Rationalize</span><h3>1,400 variants → ~80 canonical</h3><p>AI detects near-duplicate disclosures and collapses them into parameterized, governed content.</p></div>
+        <div class="card"><span class="k">Verify</span><h3>Parallel-run before cutover</h3><p>New output is diffed against the old on real data, so you prove equivalence before you switch.</p></div>
+      </div>
+      <p class="lede" data-anim>Start with one high-value communication. Expand across the estate. Migration becomes the moment you clean up — not carry forward — the mess.</p>
+    </div>
+    <aside class="notes">De-risk the switch — this dissolves the number-one objection: <em>"we have thousands of templates, we can't move."</em> The Migration Studio uses AI to ingest legacy templates, PDFs and print streams, detect and <strong>collapse near-duplicates</strong> (a bank's 1,400 disclosure variants become ~80 canonical, parameterized templates), extract the variable data mappings, and generate first-draft modern templates. <strong>Parallel-run verification</strong> diffs new output against old on production data so you prove equivalence before cutover — the regulator-friendly path. This is also our <strong>land-and-expand</strong> motion: land one high-value communication, prove the outcome, expand across the estate. Migration becomes the cleanup they've wanted for years, not a risk.</aside>
+  </section>
+
+  <!-- 13 · DEPLOY & INTEGRATE -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Fits your estate</p>
+      <h1 class="head" data-anim>Deploy anywhere. Integrate with&nbsp;<span class="gold-tick">everything.</span></h1>
+      <div class="grid cols-2" data-anim>
+        <div class="card big">
+          <span class="k">Any-premise</span>
+          <h3>Runs where your data must live</h3>
+          <div class="chips" style="margin-top:1rem">
+            <span class="chip">SaaS</span><span class="chip">Private cloud</span><span class="chip">Hybrid</span><span class="chip">Customer VPC</span>
+          </div>
+          <p style="margin-top:1rem">The same product, deployed into your boundary when regulation or data residency requires it.</p>
+        </div>
+        <div class="card big">
+          <span class="k">Integrate with anything</span>
+          <h3>Communication data never arrives clean</h3>
+          <div class="chips" style="margin-top:1rem">
+            <span class="chip">REST · OpenAPI</span><span class="chip">GraphQL</span><span class="chip">MCP · agents</span><span class="chip">Webhooks</span><span class="chip">Kafka · CloudEvents</span><span class="chip">SFTP · CDC</span><span class="chip">CRM · core banking · claims · FHIR</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <aside class="notes">Kill the infrastructure and integration objections in one slide. Regulated clients often <em>can't</em> use pure multi-tenant SaaS — so we deploy the <strong>same product</strong> into their private cloud or their own VPC, with data residency respected. And communication data never arrives clean: we ingest from anything — files, streams, databases, CRMs, core banking, claims systems, FHIR for healthcare. The forward-looking hook is <strong>MCP</strong>: Acorn OS is both an MCP server (their AI agents can safely operate approved capabilities, fully audited) and an MCP client (it can pull grounding from their systems). No incumbent has that. If IT/architecture is in the room, this is where they relax.</aside>
+  </section>
+
+  <!-- 14 · PROOF -->
+  <section class="slide">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Not slideware</p>
+      <h1 class="head" data-anim>A working, tested platform — <span class="gold-tick">running today.</span></h1>
+      <div class="metrics" data-anim>
+        <div class="metric"><div class="n">21+</div><span class="l">bounded contexts, one core</span></div>
+        <div class="metric"><div class="n">214</div><span class="l">automated tests passing</span></div>
+        <div class="metric"><div class="n">4</div><span class="l">API surfaces · REST · GraphQL · MCP · webhooks</span></div>
+        <div class="metric"><div class="n">6</div><span class="l">render formats · HTML · PDF · email · SMS · text · voice</span></div>
+      </div>
+      <ul class="flist" data-anim style="margin-top:1.6rem">
+        <li><svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>The full lifecycle runs end to end</strong> <span class="d">— compose, render, deliver with failover, view, pay, prove, archive.</span></div></li>
+        <li><svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>Live interactive viewer with a grounded assistant</strong> <span class="d">— the demo in this deck is real, not a mock.</span></div></li>
+        <li><svg class="mk" viewBox="0 0 24 24" fill="none"><path d="M20 6 9 17l-5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>Operator console, designer, and agent desk</strong> <span class="d">— all runnable in a walkthrough right after this meeting.</span></div></li>
+      </ul>
+    </div>
+    <aside class="notes">This slide separates you from vaporware — and from competitors who demo mockups. Everything in this deck is backed by a <strong>working, tested reference platform</strong>, not renders. The full communication lifecycle runs end to end: compose once, render to interactive HTML, accessible PDF and voice, deliver with automatic failover, view, pay, prove with an evidence pack, and archive to tamper-evident storage. 214 automated tests, a live grounded assistant, four API surfaces including MCP. Be honest about maturity if asked — this is a reference platform engineered to production shape, with the industrial substrate (managed Postgres, real send providers, SSO) as the deployment step. Then <strong>offer the live walkthrough</strong> — console, designer, and a real interactive statement — as the immediate next action.</aside>
+  </section>
+
+  <!-- 15 · CTA -->
+  <section class="slide center">
+    <div class="slide-inner">
+      <p class="eyebrow" data-anim>Next step</p>
+      <h1 class="display" style="font-size:clamp(2.6rem,6.5vw,5.4rem)" data-anim>Let's compose your<br>first <span class="gold-tick">outcome.</span></h1>
+      <div class="cta-box" data-anim style="text-align:left;max-width:60ch;margin-inline:auto">
+        <h2 class="sub" style="font-size:1.35rem">A time-boxed pilot on one high-value communication.</h2>
+        <p class="lede" style="margin-top:.8rem">Pick your highest-volume or highest-pain communication. We migrate it, make it interactive and accessible, deliver it, and measure the outcome — together, against a metric we agree up front.</p>
+        <div class="steps">
+          <span class="step"><b>1</b>Pick the communication</span>
+          <span class="step"><b>2</b>Migrate &amp; make it interactive</span>
+          <span class="step"><b>3</b>Measure the outcome</span>
+        </div>
+      </div>
+      <p class="cover-foot" style="position:static;justify-content:center;margin-top:2rem" data-anim>Acorn&nbsp;OS&nbsp;·&nbsp;the communication layer for the AI era&nbsp;·&nbsp;&lt;name&gt;&nbsp;&lt;email&gt;</p>
+    </div>
+    <aside class="notes">Close with a small, concrete, low-risk <strong>yes</strong>. Do <em>not</em> ask them to replace their CCM platform today — ask for <strong>one communication</strong>. Propose a time-boxed pilot: pick the highest-volume or highest-pain piece (a statement, a dunning notice, an EOB, a welcome pack), we migrate it, make it interactive and accessible, deliver it, and measure the outcome — payment lift, call deflection, or paperless adoption. <strong>Agree the success metric before you start</strong> — that's what turns a pilot into a rollout. End by restating the vision so it's the last thing they hear: <em>"This is the communication layer for the AI era — and the first oak starts with one acorn."</em> Then name the specific next action and owner before you leave the room.</aside>
+  </section>
+
+</div>
+
+<div class="chrome-bottom">
+  <span class="counter"><b id="cnum">01</b> / <span id="ctot">15</span></span>
+  <div class="dots" id="dots" role="tablist" aria-label="Slides"></div>
+  <div class="ctrls">
+    <button class="nav" id="prev" aria-label="Previous slide">‹</button>
+    <button class="nav" id="next" aria-label="Next slide">›</button>
+    <button id="notesBtn" aria-label="Toggle speaker notes">Notes</button>
+    <button id="fsBtn" aria-label="Toggle fullscreen">Full</button>
+    <button id="printBtn" aria-label="Export to PDF">PDF</button>
+  </div>
+</div>
+
+<div class="notes-drawer" id="drawer" aria-live="polite">
+  <div class="nh"><span class="tag">Speaker notes</span><span class="sn" id="drawerNum"></span></div>
+  <div class="nbody" id="drawerBody"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var total = slides.length;
+  var i = 0;
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var cnum = document.getElementById('cnum');
+  var ctot = document.getElementById('ctot');
+  var dotsWrap = document.getElementById('dots');
+  var drawer = document.getElementById('drawer');
+  var drawerBody = document.getElementById('drawerBody');
+  var drawerNum = document.getElementById('drawerNum');
+  var pad = function(n){ return (n<10?'0':'')+n; };
+
+  ctot.textContent = pad(total);
+
+  // build dots
+  slides.forEach(function(s, idx){
+    var b = document.createElement('button');
+    b.setAttribute('role','tab');
+    b.setAttribute('aria-label','Go to slide '+(idx+1));
+    b.addEventListener('click', function(){ go(idx); });
+    dotsWrap.appendChild(b);
+  });
+  var dots = Array.prototype.slice.call(dotsWrap.children);
+
+  function staggerIn(slide){
+    if(reduce) return;
+    var items = slide.querySelectorAll('[data-anim]');
+    Array.prototype.forEach.call(items, function(el, k){
+      el.style.transitionDelay = (0.04 + k*0.075)+'s';
+    });
+  }
+  function clearStagger(slide){
+    var items = slide.querySelectorAll('[data-anim]');
+    Array.prototype.forEach.call(items, function(el){ el.style.transitionDelay=''; });
+  }
+
+  function go(n){
+    n = Math.max(0, Math.min(total-1, n));
+    if(n===i && slides[i].classList.contains('active')) { syncChrome(); return; }
+    var prev = slides[i];
+    if(prev){ prev.classList.remove('active'); clearStagger(prev); }
+    i = n;
+    var cur = slides[i];
+    staggerIn(cur);
+    // force reflow so the transition re-runs
+    void cur.offsetWidth;
+    cur.classList.add('active');
+    cur.scrollTop = 0;
+    var inner = cur.querySelector('.slide-inner'); if(inner) inner.scrollTop = 0;
+    syncChrome();
+  }
+
+  function syncChrome(){
+    cnum.textContent = pad(i+1);
+    dots.forEach(function(d, idx){
+      d.classList.toggle('on', idx===i);
+      d.setAttribute('aria-selected', idx===i ? 'true':'false');
+    });
+    // notes
+    var note = slides[i].querySelector('aside.notes');
+    drawerBody.innerHTML = note ? note.innerHTML : '<em>No notes for this slide.</em>';
+    drawerNum.textContent = 'Slide '+(i+1)+' / '+total;
+    updateHash();
+  }
+
+  function next(){ go(i+1); }
+  function prev(){ go(i-1); }
+
+  document.getElementById('next').addEventListener('click', next);
+  document.getElementById('prev').addEventListener('click', prev);
+
+  // notes toggle
+  var notesOpen = false;
+  function toggleNotes(force){
+    notesOpen = (typeof force==='boolean') ? force : !notesOpen;
+    drawer.classList.toggle('open', notesOpen);
+    document.getElementById('notesBtn').style.color = notesOpen ? 'var(--gold)':'';
+    document.getElementById('notesBtn').style.borderColor = notesOpen ? 'var(--gold)':'';
+  }
+  document.getElementById('notesBtn').addEventListener('click', function(){ toggleNotes(); });
+
+  // fullscreen
+  document.getElementById('fsBtn').addEventListener('click', function(){
+    if(!document.fullscreenElement){ (document.documentElement.requestFullscreen||function(){})(); }
+    else if(document.exitFullscreen){ document.exitFullscreen(); }
+  });
+  // print
+  document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+
+  // keyboard
+  document.addEventListener('keydown', function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey) return;
+    switch(e.key){
+      case 'ArrowRight': case 'PageDown': case ' ': e.preventDefault(); next(); break;
+      case 'ArrowLeft': case 'PageUp': e.preventDefault(); prev(); break;
+      case 'Home': e.preventDefault(); go(0); break;
+      case 'End': e.preventDefault(); go(total-1); break;
+      case 'n': case 'N': case 's': case 'S': toggleNotes(); break;
+      case 'f': case 'F': document.getElementById('fsBtn').click(); break;
+      case 'p': case 'P': e.preventDefault(); window.print(); break;
+      default:
+        if(e.key>='1' && e.key<='9'){ go(parseInt(e.key,10)-1); }
+    }
+  });
+
+  // click zones (ignore clicks on controls/links)
+  document.getElementById('deck').addEventListener('click', function(e){
+    if(e.target.closest('a,button,.doc-mock')) return;
+    var x = e.clientX / window.innerWidth;
+    if(x > 0.62) next(); else if(x < 0.38) prev();
+  });
+
+  // swipe
+  var tx=0;
+  document.addEventListener('touchstart', function(e){ tx=e.touches[0].clientX; }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    var dx = e.changedTouches[0].clientX - tx;
+    if(Math.abs(dx)>55){ dx<0 ? next() : prev(); }
+  }, {passive:true});
+
+  // deep link via hash
+  function updateHash(){ try{ history.replaceState(null,'','#'+(i+1)); }catch(_){ } }
+  function fromHash(){
+    var h = parseInt((location.hash||'').replace('#',''),10);
+    return (h>=1 && h<=total) ? h-1 : 0;
+  }
+
+  // ---- growth-rings canvas ----
+  var canvas = document.getElementById('rings');
+  var ctx = canvas.getContext('2d');
+  function draw(){
+    var w = canvas.width = window.innerWidth * (window.devicePixelRatio||1);
+    var h = canvas.height = window.innerHeight * (window.devicePixelRatio||1);
+    canvas.style.width = window.innerWidth+'px';
+    canvas.style.height = window.innerHeight+'px';
+    ctx.clearRect(0,0,w,h);
+    var cx = w*0.80, cy = h*0.34;
+    var maxR = Math.hypot(w,h)*0.9;
+    var gold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#d8a24a';
+    // faint radial vignette to seat the rings
+    var g = ctx.createRadialGradient(cx,cy,0,cx,cy,maxR);
+    g.addColorStop(0,'rgba(216,162,74,0.05)');
+    g.addColorStop(0.5,'rgba(127,185,154,0.02)');
+    g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g; ctx.fillRect(0,0,w,h);
+    var dpr = window.devicePixelRatio||1;
+    ctx.lineWidth = 1*dpr;
+    var step = 26*dpr, r=step, k=0;
+    while(r < maxR){
+      k++;
+      // slight organic wobble in radius so rings read like oak growth-rings
+      ctx.beginPath();
+      var segs = 120;
+      for(var s=0; s<=segs; s++){
+        var a = (s/segs)*Math.PI*2;
+        var wob = Math.sin(a*3 + k*0.6)*step*0.06 + Math.cos(a*5 - k*0.4)*step*0.04;
+        var rr = r + wob;
+        var px = cx + Math.cos(a)*rr;
+        var py = cy + Math.sin(a)*rr*0.92;
+        if(s===0) ctx.moveTo(px,py); else ctx.lineTo(px,py);
+      }
+      var op = 0.16 * (1 - r/maxR);
+      ctx.strokeStyle = 'rgba(216,162,74,'+op.toFixed(3)+')';
+      ctx.stroke();
+      r += step * (1 + (k%3===0?0.5:0.1));
+    }
+  }
+  draw();
+  var rt;
+  window.addEventListener('resize', function(){ clearTimeout(rt); rt=setTimeout(draw,120); });
+
+  // theme changes redraw ring colour context
+  try{
+    var mo = new MutationObserver(draw);
+    mo.observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  }catch(_){ }
+
+  // init
+  go(fromHash());
+})();
+</script>
