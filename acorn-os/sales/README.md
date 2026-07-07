@@ -2,6 +2,13 @@
 
 A self-contained, presentation-ready sales deck for Acorn OS.
 
+## Two formats
+
+- **`acorn-os-sales-deck.html`** — the interactive, presentation-ready deck (recommended for live pitches).
+- **`Acorn-OS-Sales-Deck.pptx`** — a PowerPoint version with the same 15 slides, brand styling, live product screenshots, and the speaker talking points in each slide's notes field. Open in PowerPoint, Keynote, or Google Slides for teams that need to edit or co-brand.
+
+Both embed real screenshots of the running platform (the interactive viewer, the grounded assistant, the template designer, and the operator console / agent desk).
+
 ## Use it
 
 - **Present:** open `acorn-os-sales-deck.html` in any browser. No install, no build, no network — everything (fonts stack, styles, script, artwork) is inline.
