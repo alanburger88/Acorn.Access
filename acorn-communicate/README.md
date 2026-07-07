@@ -25,7 +25,7 @@ Then:
 - **Outbox** — simulated email (`.eml`) and SMS (`.json`) providers write to `data/outbox/`.
 
 ```bash
-npm test         # 60+ unit + integration tests, plus the full-lifecycle e2e suite
+npm test         # 214 unit + integration tests, plus the full-lifecycle e2e suite
 npm run build    # strict typecheck
 ```
 
