@@ -6,10 +6,11 @@
  */
 import { configFromEnv, createBaseContext } from './kernel/context.js';
 import { wireServices } from './wiring.js';
+import { adaptersFromEnv } from './adapters/select.js';
 import type { RequestCtx, TemplateBlock } from './kernel/contracts.js';
 
 const config = configFromEnv();
-const ctx = createBaseContext(config);
+const ctx = createBaseContext(config, adaptersFromEnv(config));
 wireServices(ctx);
 
 const { tenants, content, templates, composition, delivery, nba, journeys, print, translations, usage } =

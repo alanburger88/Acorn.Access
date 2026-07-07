@@ -1,18 +1,9 @@
 import { buildPlatform } from './server.js';
 import { configFromEnv } from './kernel/context.js';
-import { createSqliteStore } from './adapters/sqlite-store.js';
-import { join } from 'node:path';
+import { adaptersFromEnv } from './adapters/select.js';
 
 const config = configFromEnv();
-
-// Storage driver selection: ACORN_STORE=sqlite swaps the file-backed
-// collections for the SQL adapter (same StorePort; domains are untouched).
-const adapters =
-  process.env.ACORN_STORE === 'sqlite'
-    ? { store: createSqliteStore(join(config.dataDir, 'acorn.sqlite')) }
-    : {};
-
-const { app, ctx } = buildPlatform(config, adapters);
+const { app, ctx } = buildPlatform(config, adaptersFromEnv(config));
 
 // Journey scheduler: advance wait-step deadlines (production uses a durable
 // timer queue; see platform/04 saga patterns).

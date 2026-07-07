@@ -59,6 +59,10 @@ npm run build    # strict typecheck
 | `migration` | **Migration Studio**: legacy HTML/text ingestion → extracted blocks, variable detection, content-candidate matching, complexity/effort scoring, draft template creation, duplicate report, **parallel-run diff harness** |
 | `agent-desk` | Contact-center workspace at `/agent`: customer search, overview, resend, secure-link reissue, service notes — **every action audited** to the event chain |
 | `lifecycle` | Retention sweeps (expired links, retention-due counts), **GDPR erasure with legal-hold blocking** and dedupe-aware object deletion, backup/restore/verify CLI (`npm run backup`) |
+| `adapters` | **Pluggable storage ports**: `ACORN_STORE=sqlite` runs the whole platform on a node:sqlite store (WAL, prepared statements) through the same `StorePort` — the Postgres seam per the architecture doc |
+| `replication` | **Offsite WORM replication** of archived communications to S3-compatible storage: hand-rolled AWS SigV4 (verified against the official test vector), retry, per-communication status, `ACORN_S3_*` env |
+| `api/metrics` | **Prometheus `/metrics`** (route-pattern-bounded HTTP counters/durations, event counters, collection/process gauges) and `x-request-id` propagation |
+| hardening | Webhook **SSRF guard** (loopback/link-local/private targets rejected in production), **timing-safe** secure-link token and OTP comparison |
 
 ## API
 
