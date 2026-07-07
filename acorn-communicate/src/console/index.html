@@ -155,6 +155,24 @@ const views = {
       }catch(e){$('#istat').innerHTML='<span class="err">'+esc(e.message)+'</span>';}
     };
   },
+  async usage(){
+    const periods = await api('/v1/usage/periods').catch(()=>[]);
+    const u = await api('/v1/usage'+(window.__usagePeriod?'?period='+encodeURIComponent(window.__usagePeriod):''));
+    const deliveries = Object.entries(u.metrics).filter(([m])=>m.startsWith('deliveries.')).reduce((s,[,q])=>s+q,0);
+    const opts = (periods.length?periods:[u.period]).map(p=>`<option value="${esc(p)}"${p===u.period?' selected':''}>${esc(p)}</option>`).join('');
+    main.innerHTML=`<h2>Usage &amp; estimated cost — period <select id="psel" class="f" style="width:auto;display:inline-block">${opts}</select></h2>
+    <div class="cards">
+      ${card('$'+u.estimatedCostUsd.toFixed(4),'estimated cost (USD)')}
+      ${card(u.metrics['renders']??0,'renders')}
+      ${card(deliveries,'deliveries')}
+      ${card(u.metrics['ai.invocations']??0,'ai invocations')}
+    </div>
+    <table><thead><tr><th>Metric</th><th>Quantity</th><th>Unit rate</th><th>Cost</th></tr></thead><tbody>
+    ${Object.entries(u.metrics).sort(([a],[b])=>a.localeCompare(b)).map(([m,q])=>{const r=u.rates[m]??0;return `<tr><td><code>${esc(m)}</code></td><td>${q}</td><td class="mut">$${r}</td><td>$${(q*r).toFixed(4)}</td></tr>`;}).join('')||'<tr><td colspan="4" class="mut">No usage recorded for this period</td></tr>'}
+    </tbody></table>
+    <p class="mut">Reference unit rates per the platform cost model — estimation only, not a bill.</p>`;
+    $('#psel').onchange=()=>{window.__usagePeriod=$('#psel').value;route('usage');};
+  },
 };
 
 const card=(v,l)=>`<div class="card"><b>${esc(v)}</b><span>${esc(l)}</span></div>`;
@@ -193,7 +211,7 @@ window.evidence = async (id)=>{
   $('#detail').innerHTML = `<h2>Evidence pack — chain ${p.eventChain.intact?'intact ✓':'BROKEN ✗'}</h2><pre>${esc(JSON.stringify(p,null,2))}</pre>`;
 };
 
-const tabs = ['dashboard','communications','templates','content','customers','deliveries','journeys','print','archive','ingest'];
+const tabs = ['dashboard','communications','templates','content','customers','deliveries','journeys','print','archive','ingest','usage'];
 let current='dashboard';
 $('#nav').innerHTML = tabs.map(t=>`<button data-t="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('');
 $('#nav').addEventListener('click',(e)=>{const t=e.target.dataset?.t;if(t)route(t);});
