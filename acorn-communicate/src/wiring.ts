@@ -20,6 +20,10 @@ import { createJourneyService, registerJourneyRoutes } from './domains/journeys/
 import { createPrintService, registerPrintRoutes } from './domains/print/index.js';
 import { registerGraphqlRoutes } from './api/graphql/index.js';
 import { registerOpenApiRoute } from './api/openapi.js';
+import { registerAiRoutes } from './api/ai.js';
+import { createTranslationService, registerTranslationRoutes } from './domains/translations/index.js';
+import { createExperimentService, registerExperimentRoutes } from './domains/experiments/index.js';
+import { createUsageService, registerUsageRoutes } from './domains/usage/index.js';
 
 /**
  * Wire every bounded context into the shared context. Order matters only for
@@ -42,6 +46,9 @@ export function wireServices(ctx: PlatformContext): void {
   ctx.services.ingestion = createIngestionService(ctx);
   ctx.services.journeys = createJourneyService(ctx);
   ctx.services.print = createPrintService(ctx);
+  ctx.services.translations = createTranslationService(ctx);
+  ctx.services.experiments = createExperimentService(ctx);
+  ctx.services.usage = createUsageService(ctx);
 }
 
 export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): void {
@@ -61,4 +68,8 @@ export function registerAllRoutes(app: FastifyInstance, ctx: PlatformContext): v
   registerPrintRoutes(app, ctx);
   registerGraphqlRoutes(app, ctx);
   registerOpenApiRoute(app, ctx);
+  registerAiRoutes(app, ctx);
+  registerTranslationRoutes(app, ctx);
+  registerExperimentRoutes(app, ctx);
+  registerUsageRoutes(app, ctx);
 }

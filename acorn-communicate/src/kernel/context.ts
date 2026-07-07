@@ -8,10 +8,13 @@ import type {
   CompositionService,
   ContentService,
   DeliveryService,
+  ExperimentService,
   IngestionService,
   JourneyService,
   NbaService,
   PrintService,
+  TranslationService,
+  UsageService,
   RenderingService,
   TemplateService,
   TenantService,
@@ -60,6 +63,9 @@ export interface PlatformServices {
   ingestion: IngestionService;
   journeys: JourneyService;
   print: PrintService;
+  translations: TranslationService;
+  experiments: ExperimentService;
+  usage: UsageService;
 }
 
 export interface PlatformContext {

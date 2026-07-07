@@ -37,7 +37,13 @@ export function createCompositionService(ctx: PlatformContext): CompositionServi
 
   const service: CompositionService = {
     async compose({ tenantId, templateId, customerId, data, requestedChannels, journeyRef }) {
-      const version = ctx.services.templates.publishedVersion(tenantId, templateId);
+      // Experiment hook: a running A/B experiment on the template assigns this
+      // customer a variant version deterministically; otherwise the published
+      // version is used. (Optional chaining: standalone tests may wire
+      // composition without the experiments service.)
+      const version =
+        ctx.services.experiments?.selectVersion(tenantId, templateId, customerId) ??
+        ctx.services.templates.publishedVersion(tenantId, templateId);
       if (!version) throw invalid('template has no published version');
       const template = ctx.store.collection<Template>('templates').getFor(tenantId, templateId);
       if (!template) throw notFound('template', templateId);
@@ -62,6 +68,14 @@ export function createCompositionService(ctx: PlatformContext): CompositionServi
         locale: customer.locale,
         data,
         resolveContent: (key) => {
+          // Locale-aware resolution: an approved translation matching the
+          // customer's locale wins; the translation service falls back to the
+          // approved source version internally. (Optional chaining for
+          // standalone tests wired without the translations service.)
+          const localized = ctx.services.translations?.resolveContent(tenantId, key, customer.locale);
+          if (localized) {
+            return { versionId: localized.ref, title: localized.title, body: localized.body };
+          }
           const resolved = ctx.services.content.getByKey(tenantId, key);
           return resolved?.approved
             ? { versionId: resolved.approved.id, title: resolved.content.title, body: resolved.approved.body }

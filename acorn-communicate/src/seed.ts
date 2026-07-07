@@ -12,7 +12,8 @@ const config = configFromEnv();
 const ctx = createBaseContext(config);
 wireServices(ctx);
 
-const { tenants, content, templates, composition, delivery, nba, journeys, print } = ctx.services;
+const { tenants, content, templates, composition, delivery, nba, journeys, print, translations, usage } =
+  ctx.services;
 
 // --- tenant + actors -------------------------------------------------------
 const { tenant, adminKey } = tenants.createTenant({
@@ -273,6 +274,17 @@ const benData = {
   ],
 };
 
+// Spanish-locale customer: his statement resolves the approved Spanish
+// translation of the billing-rights disclosure at composition time.
+const diego = tenants.createCustomer(admin, {
+  externalRef: 'CUST-1004',
+  name: 'Diego Fuentes',
+  email: 'diego@example.com',
+  phone: '+1-555-310-9954',
+  locale: 'es-MX',
+  address: { line1: '9 Cedar Ct', city: 'El Paso', region: 'TX', postalCode: '79901', country: 'US' },
+});
+
 // third customer used by the dunning journey demo
 const cara = tenants.createCustomer(admin, {
   externalRef: 'CUST-1003',
@@ -354,6 +366,36 @@ async function main() {
     },
   });
 
+  // --- Spanish translation of the disclosure (machine draft → human approval)
+  const disclosure = content.listContent(admin, 'disclosure')[0]!;
+  const translation = await translations.translateContent(author, disclosure.id, 'es');
+  translations.review(approver, translation.id, 'approved');
+
+  const comDiego = await composition.compose({
+    tenantId: tenant.id,
+    templateId: template.id,
+    customerId: diego.id,
+    data: {
+      customer: { firstName: 'Diego' },
+      period: 'June 2026',
+      account: {
+        previousBalance: 210.0,
+        payments: 210.0,
+        newCharges: 154.75,
+        newBalance: 154.75,
+        minimumDue: 25.0,
+        dueDate: '2026-07-25',
+        feesCharged: 0,
+        interestCharged: 0,
+      },
+      transactions: [
+        { date: '2026-06-08', description: 'Mercado Central', amount: 84.3 },
+        { date: '2026-06-18', description: 'Autobús Express', amount: 70.45 },
+      ],
+    },
+  });
+  await delivery.deliver({ tenantId: tenant.id, communicationId: comDiego.id });
+
   // --- print batch over the two delivered statements
   const batch = await print.createBatch(admin, { communicationIds: [comAda.id, comBen.id] });
 
@@ -371,6 +413,11 @@ async function main() {
   console.log(`  dunning journey:  ${dunning.id} (instance ${instance.id}, step ${instance.currentStepId})`);
   console.log(`  print batch:      ${batch.id} (${batch.pieceIds.length} pieces, ${batch.suppressed.length} suppressed)`);
   console.log(`  MCP server:       ACORN_MCP_API_KEY=${adminKey.secret} npm run mcp`);
+  const linkDiego = ctx.services.delivery.getSecureLink(tenant.id, comDiego.id);
+  console.log(`  Diego (es-MX):    ${config.baseUrl}/view/${linkDiego?.token}  (Spanish disclosure)`);
+  console.log(`  designer:         ${config.baseUrl}/designer`);
+  const bill = usage.summary(tenant.id);
+  console.log(`  usage this month: $${bill.estimatedCostUsd} across ${Object.keys(bill.metrics).length} metrics`);
   console.log('──────────────────────────────────────────────────────');
 }
 

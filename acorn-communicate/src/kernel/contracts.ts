@@ -968,3 +968,126 @@ export interface PrintService {
     batchId: string,
   ): { expected: number; mailed: number; delivered: number; returned: number; outstanding: number };
 }
+
+// ---------------------------------------------------------------------------
+// Multilingual translations (tier 3)
+// ---------------------------------------------------------------------------
+
+/**
+ * Locale variants of approved content live beside the source ContentObject
+ * with their own approval lifecycle (approving a Spanish variant must never
+ * retire the English source), and are resolved at composition time by the
+ * customer's locale with fallback to the source content.
+ */
+export interface ContentTranslation {
+  id: string; // tnl_
+  tenantId: string;
+  contentId: string;
+  /** the approved source version this translation was produced from */
+  sourceVersionId: string;
+  locale: string; // BCP-47, e.g. "es" or "es-MX"
+  title: string;
+  body: string;
+  status: ApprovalStatus;
+  method: 'dictionary' | 'llm' | 'human';
+  authorId: string;
+  createdAt: string;
+  reviewedBy?: string;
+  reviewedAt?: string;
+  aiAssisted: boolean;
+  /** segments served from translation memory (reuse metric) */
+  memoryHits: number;
+}
+
+export interface ResolvedContent {
+  title: string;
+  body: string;
+  /** version pinned into the chain of custody: cnv_ (source) or tnl_ (variant) */
+  ref: string;
+  locale: string;
+}
+
+export interface TranslationService {
+  /** Machine-translate the approved source version into a locale (draft — human approval required). */
+  translateContent(ctx: RequestCtx, contentId: string, targetLocale: string): Promise<ContentTranslation>;
+  /** SoD-enforced review, mirroring the content approval workflow. */
+  review(ctx: RequestCtx, translationId: string, decision: 'approved' | 'rejected', note?: string): ContentTranslation;
+  /**
+   * Resolve content for a key preferring an approved translation matching the
+   * locale (exact, then language-prefix), falling back to the approved source
+   * version. Undefined when the key has no approved content at all.
+   */
+  resolveContent(tenantId: string, key: string, locale: string): ResolvedContent | undefined;
+  list(ctx: RequestCtx, contentId?: string): ContentTranslation[];
+  /** translation-memory statistics */
+  memoryStats(ctx: RequestCtx): { entries: number };
+}
+
+// ---------------------------------------------------------------------------
+// Experiments / A-B testing (tier 3)
+// ---------------------------------------------------------------------------
+
+export interface Experiment {
+  id: string; // exp_
+  tenantId: string;
+  templateId: string;
+  name: string;
+  status: 'running' | 'concluded';
+  /** weighted variants; each versionId is a TemplateVersion of the template */
+  variants: { versionId: string; weight: number }[];
+  createdAt: string;
+  concludedAt?: string;
+  winnerVersionId?: string;
+}
+
+export interface VariantResult {
+  versionId: string;
+  assigned: number;
+  delivered: number;
+  viewed: number;
+  outcomes: number;
+  outcomeRate: number;
+}
+
+export interface ExperimentService {
+  create(
+    ctx: RequestCtx,
+    args: { templateId: string; name: string; variants: { versionId: string; weight: number }[] },
+  ): Experiment;
+  /**
+   * Deterministic variant assignment (hash of experimentId + customerId over
+   * the weight space) for the template's running experiment; undefined when
+   * no experiment is running so composition falls back to the published
+   * version. Every variant must have passed the accessibility gate.
+   */
+  selectVersion(tenantId: string, templateId: string, customerId: string): TemplateVersion | undefined;
+  results(ctx: RequestCtx, experimentId: string): VariantResult[];
+  conclude(ctx: RequestCtx, experimentId: string, winnerVersionId?: string): Experiment;
+  list(ctx: RequestCtx): Experiment[];
+  get(ctx: RequestCtx, experimentId: string): Experiment;
+}
+
+// ---------------------------------------------------------------------------
+// Usage metering & FinOps (tier 3)
+// ---------------------------------------------------------------------------
+
+export interface UsageSummary {
+  period: string; // YYYY-MM
+  metrics: Record<string, number>;
+  /** reference unit rates applied (per platform/10 cost model) */
+  rates: Record<string, number>;
+  estimatedCostUsd: number;
+}
+
+export interface UsageService {
+  record(tenantId: string, metric: string, qty?: number): void;
+  summary(tenantId: string, period?: string): UsageSummary;
+  listPeriods(tenantId: string): string[];
+  /** In-memory token bucket per API-key hash (production: gateway-level). */
+  checkRateLimit(bucketKey: string): {
+    allowed: boolean;
+    limit: number;
+    remaining: number;
+    resetSeconds: number;
+  };
+}

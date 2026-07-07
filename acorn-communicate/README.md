@@ -52,6 +52,10 @@ npm run build    # strict typecheck
 | `api/graphql` | Read-only **GraphQL endpoint** (`POST /graphql`) for composite reads (communication + timeline + recommendations + deliveries), depth/size guards |
 | `api/openapi` | **OpenAPI 3.1 spec** at `/v1/openapi.json` covering the full REST surface |
 | `mcp` | **MCP stdio server** (`npm run mcp`) exposing allow-listed, role-checked, audited tools (explain_communication, evidence packs, drafts requiring human approval — no delivery initiation) |
+| `translations` | Multilingual content: machine-translated locale drafts with **human approval (SoD)**, translation memory, locale-aware resolution at composition (exact → language prefix → source fallback) |
+| `experiments` | A/B testing: weighted variants with **deterministic customer assignment**, accessibility-gated variants, per-variant outcome results, conclude-with-winner |
+| `usage` | FinOps: event-driven usage metering with reference unit rates and estimated cost, per-key **API rate limiting** (429 + RateLimit headers), console Usage tab |
+| `designer` | **Visual template designer** at `/designer`: drag-and-drop block canvas, property forms, data-contract editor, AI assist (drafts only — human applies), accessibility check, live preview, publish with gate errors surfaced |
 
 ## API
 
