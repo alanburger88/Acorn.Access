@@ -17,6 +17,7 @@ import type {
 } from '../../kernel/contracts.js';
 import type { PlatformContext } from '../../kernel/context.js';
 import { conflict, forbidden, invalid, notFound } from '../../kernel/errors.js';
+import { isWindowEffective } from '../../kernel/dating.js';
 import { parseBody, requireAuth } from '../../kernel/http.js';
 import { newId } from '../../kernel/ids.js';
 import { translateText, type MachineLocale } from './dictionary.js';
@@ -163,6 +164,10 @@ export function createTranslationService(ctx: PlatformContext): TranslationServi
       const content = contents.list(tenantId, (c) => c.key === key).at(0);
       if (!content) return undefined;
 
+      // Dating enforcement (wall-clock; production would pin to the
+      // communication's compose time — acceptable for the reference impl).
+      const now = Date.now();
+
       const loc = locale.trim().toLowerCase();
       const lang = loc.split('-')[0] ?? loc;
       const approved = translations.list(
@@ -176,14 +181,28 @@ export function createTranslationService(ctx: PlatformContext): TranslationServi
           return tl === lang || tl.split('-')[0] === lang;
         });
       if (match) {
-        return { title: match.title, body: match.body, ref: match.id, locale: match.locale };
+        // A translation renders only while BOTH its own effective window (dates
+        // stored permissively, mirroring ContentVersion) AND its source version
+        // are current: an expired source disclosure must never render, even in
+        // translation. When not current, fall through to the source fallback.
+        const matchDates = match as { effectiveFrom?: string; expiresAt?: string };
+        const src = versions.getFor(tenantId, match.sourceVersionId);
+        const translationEffective =
+          isWindowEffective(matchDates.effectiveFrom, matchDates.expiresAt, now) &&
+          (!src || isWindowEffective(src.effectiveFrom, src.expiresAt, now));
+        if (translationEffective) {
+          return { title: match.title, body: match.body, ref: match.id, locale: match.locale };
+        }
       }
 
-      // Fall back to the approved source version.
+      // Fall back to the approved source version — also dating-aware.
       const sourceVersion = content.approvedVersionId
         ? versions.getFor(tenantId, content.approvedVersionId)
         : undefined;
       if (!sourceVersion) return undefined;
+      if (!isWindowEffective(sourceVersion.effectiveFrom, sourceVersion.expiresAt, now)) {
+        return undefined;
+      }
       return {
         title: content.title,
         body: sourceVersion.body,

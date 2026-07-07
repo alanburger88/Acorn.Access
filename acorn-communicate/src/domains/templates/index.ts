@@ -318,7 +318,10 @@ export function createTemplateService(ctx: PlatformContext): TemplateService {
           throw invalid(`content-ref '${contentKey}' does not resolve to any content`);
         }
         if (!resolved.approved) {
-          throw invalid(`content-ref '${contentKey}' has no approved content version`);
+          // getByKey is dating-aware: an expired or not-yet-effective approved
+          // version is reported as absent here, so publishing a template that
+          // references it is correctly blocked.
+          throw invalid(`content '${contentKey}' has no currently-effective approved version`);
         }
       }
 

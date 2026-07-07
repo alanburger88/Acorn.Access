@@ -14,6 +14,7 @@ import type {
 } from '../../kernel/contracts.js';
 import type { PlatformContext } from '../../kernel/context.js';
 import { conflict, forbidden, notFound } from '../../kernel/errors.js';
+import { assertDateWindow, isWindowEffective } from '../../kernel/dating.js';
 import { parseBody, requireAuth } from '../../kernel/http.js';
 import { newId } from '../../kernel/ids.js';
 
@@ -148,6 +149,13 @@ export function createContentService(ctx: PlatformContext): ContentService {
         .at(0);
       if (duplicate) throw conflict(`content with key '${args.key}' already exists`);
 
+      // Effective/expiry dating: the ContentService contract signature is fixed
+      // (contracts.ts must not change), so accept the optional ISO dates via a
+      // permissive local cast off the args object. The route zod schema
+      // validates them as ISO datetimes before they reach here.
+      const dating = args as { effectiveFrom?: string; expiresAt?: string };
+      assertDateWindow(dating.effectiveFrom, dating.expiresAt);
+
       const now = new Date().toISOString();
       const content: ContentObject = {
         id: newId('cnt'),
@@ -168,6 +176,8 @@ export function createContentService(ctx: PlatformContext): ContentService {
         status: 'draft',
         authorId: rctx.actorId,
         createdAt: now,
+        ...(dating.effectiveFrom !== undefined ? { effectiveFrom: dating.effectiveFrom } : {}),
+        ...(dating.expiresAt !== undefined ? { expiresAt: dating.expiresAt } : {}),
         scores: computeScores(args.body),
         aiAssisted: false,
       };
@@ -186,6 +196,9 @@ export function createContentService(ctx: PlatformContext): ContentService {
 
     newVersion(rctx, contentId, args) {
       const content = mustGetContent(rctx.tenantId, contentId);
+      // Permissive dating cast — see createContent (contract signature is fixed).
+      const dating = args as { effectiveFrom?: string; expiresAt?: string };
+      assertDateWindow(dating.effectiveFrom, dating.expiresAt);
       const all = versions.list(rctx.tenantId, (v) => v.contentId === contentId);
       const next = all.reduce((max, v) => Math.max(max, v.version), 0) + 1;
       const latest = latestVersionOf(content);
@@ -199,6 +212,8 @@ export function createContentService(ctx: PlatformContext): ContentService {
         status: 'draft',
         authorId: rctx.actorId,
         createdAt: new Date().toISOString(),
+        ...(dating.effectiveFrom !== undefined ? { effectiveFrom: dating.effectiveFrom } : {}),
+        ...(dating.expiresAt !== undefined ? { expiresAt: dating.expiresAt } : {}),
         scores: computeScores(args.body),
         aiAssisted: args.aiAssisted ?? false,
       };
@@ -278,7 +293,19 @@ export function createContentService(ctx: PlatformContext): ContentService {
       const approved = content.approvedVersionId
         ? versions.getFor(tenantId, content.approvedVersionId)
         : undefined;
-      return approved ? { content, approved } : { content };
+      // Dating-aware: this is the composition/publish enforcement point, so the
+      // approved version is only surfaced while it is currently effective. An
+      // expired or not-yet-effective disclosure yields { content } with no
+      // approved version, so downstream treats it as unavailable.
+      //
+      // Uses wall-clock Date.now(); a production impl would pin dating to the
+      // communication's compose time (acceptable for the reference impl).
+      // Admin/debug can still fetch the latest approved regardless of dating via
+      // content.approvedVersionId + getVersion().
+      if (approved && isWindowEffective(approved.effectiveFrom, approved.expiresAt, Date.now())) {
+        return { content, approved };
+      }
+      return { content };
     },
 
     listContent(rctx, type) {
@@ -329,11 +356,17 @@ const createContentSchema = z.object({
   title: z.string().min(1),
   body: z.string().min(1),
   locale: z.string().optional(),
+  // Optional content effective/expiry dating (ISO 8601 datetimes).
+  effectiveFrom: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional(),
 });
 
 const newVersionSchema = z.object({
   body: z.string().min(1),
   aiAssisted: z.boolean().optional(),
+  // Optional content effective/expiry dating (ISO 8601 datetimes).
+  effectiveFrom: z.string().datetime().optional(),
+  expiresAt: z.string().datetime().optional(),
 });
 
 const reviewSchema = z.object({
