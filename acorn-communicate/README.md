@@ -47,6 +47,11 @@ npm run build    # strict typecheck
 | `archive` | Auto-archived statement of record with reproduction manifest, legal hold, **regulator evidence packs** (proof of delivery/access/content/version/AI/actions), reproducibility verification |
 | `ingestion` | JSON/CSV batch ingestion (quoted CSV, dot-path columns), customer matching, per-record errors, **PII/PHI scanning (email/phone/SSN/Luhn-checked PANs)** |
 | `webhooks` | Subscriptions with pattern filters, **HMAC-signed deliveries**, retries, delivery log, replay |
+| `journeys` | State-machine journey orchestration (send → wait-for-outcome → remind → end), **event-driven advancement** + deadline scheduler, instance history |
+| `print` | Print batch spooling with **householding, postal presort, IMB codes, suppression**, spool manifests, mail piece events, return-mail → NBA, reconciliation |
+| `api/graphql` | Read-only **GraphQL endpoint** (`POST /graphql`) for composite reads (communication + timeline + recommendations + deliveries), depth/size guards |
+| `api/openapi` | **OpenAPI 3.1 spec** at `/v1/openapi.json` covering the full REST surface |
+| `mcp` | **MCP stdio server** (`npm run mcp`) exposing allow-listed, role-checked, audited tools (explain_communication, evidence packs, drafts requiring human approval — no delivery initiation) |
 
 ## API
 

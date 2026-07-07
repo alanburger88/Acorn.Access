@@ -12,7 +12,7 @@ const config = configFromEnv();
 const ctx = createBaseContext(config);
 wireServices(ctx);
 
-const { tenants, content, templates, composition, delivery, nba } = ctx.services;
+const { tenants, content, templates, composition, delivery, nba, journeys, print } = ctx.services;
 
 // --- tenant + actors -------------------------------------------------------
 const { tenant, adminKey } = tenants.createTenant({
@@ -273,6 +273,16 @@ const benData = {
   ],
 };
 
+// third customer used by the dunning journey demo
+const cara = tenants.createCustomer(admin, {
+  externalRef: 'CUST-1003',
+  name: 'Cara Lindqvist',
+  email: 'cara@example.com',
+  phone: '+1-555-882-4471',
+  locale: 'en-US',
+  address: { line1: '5 Birch Ln', city: 'Denver', region: 'CO', postalCode: '80202', country: 'US' },
+});
+
 async function main() {
   const comAda = await composition.compose({
     tenantId: tenant.id,
@@ -292,6 +302,61 @@ async function main() {
   await delivery.deliver({ tenantId: tenant.id, communicationId: comBen.id });
   nba.recommend(tenant.id, comBen.id);
 
+  // --- dunning journey: statement → wait for payment → remind → wait → end
+  const dunning = journeys.createJourney(author, {
+    key: 'statement-dunning',
+    name: 'Statement with payment follow-up',
+    entryStepId: 'send-statement',
+    steps: [
+      { id: 'send-statement', kind: 'send', templateId: template.id, next: 'wait-payment' },
+      {
+        id: 'wait-payment',
+        kind: 'wait',
+        until: 'outcome-achieved',
+        timeoutMs: 5 * 60_000,
+        onEvent: 'done',
+        onTimeout: 'remind',
+      },
+      { id: 'remind', kind: 'remind', next: 'wait-again' },
+      {
+        id: 'wait-again',
+        kind: 'wait',
+        until: 'outcome-achieved',
+        timeoutMs: 10 * 60_000,
+        onEvent: 'done',
+        onTimeout: 'give-up',
+      },
+      { id: 'done', kind: 'end', result: 'completed' },
+      { id: 'give-up', kind: 'end', result: 'abandoned' },
+    ],
+  });
+  const instance = await journeys.start({
+    tenantId: tenant.id,
+    journeyId: dunning.id,
+    customerId: cara.id,
+    data: {
+      customer: { firstName: 'Cara' },
+      period: 'June 2026',
+      account: {
+        previousBalance: 0,
+        payments: 0,
+        newCharges: 412.35,
+        newBalance: 412.35,
+        minimumDue: 25.0,
+        dueDate: '2026-07-25',
+        feesCharged: 0,
+        interestCharged: 0,
+      },
+      transactions: [
+        { date: '2026-06-07', description: 'Mountain Outfitters', amount: 289.4 },
+        { date: '2026-06-15', description: 'City Bikes', amount: 122.95 },
+      ],
+    },
+  });
+
+  // --- print batch over the two delivered statements
+  const batch = await print.createBatch(admin, { communicationIds: [comAda.id, comBen.id] });
+
   const linkAda = ctx.services.delivery.getSecureLink(tenant.id, comAda.id);
   const linkBen = ctx.services.delivery.getSecureLink(tenant.id, comBen.id);
 
@@ -303,6 +368,9 @@ async function main() {
   console.log(`  Ada's statement:  ${config.baseUrl}/view/${linkAda?.token}`);
   console.log(`  Ben's statement:  ${config.baseUrl}/view/${linkBen?.token}`);
   console.log(`  outbox (.eml/.sms): ${config.outboxDir}`);
+  console.log(`  dunning journey:  ${dunning.id} (instance ${instance.id}, step ${instance.currentStepId})`);
+  console.log(`  print batch:      ${batch.id} (${batch.pieceIds.length} pieces, ${batch.suppressed.length} suppressed)`);
+  console.log(`  MCP server:       ACORN_MCP_API_KEY=${adminKey.secret} npm run mcp`);
   console.log('──────────────────────────────────────────────────────');
 }
 

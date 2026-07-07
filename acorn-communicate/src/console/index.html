@@ -118,6 +118,22 @@ const views = {
     <td>${r.legalHold?'<span class="pill bad">HOLD</span>':'—'}</td>
     <td><button class="act ghost" onclick="evidence('${r.communicationId}')">Evidence pack</button></td></tr>`).join('')||'<tr><td colspan="5" class="mut">None</td></tr>'}</tbody></table><div id="detail"></div>`;
   },
+  async journeys(){
+    const [js, is] = await Promise.all([api('/v1/journeys'), api('/v1/journey-instances')]);
+    main.innerHTML=`<h2>Journeys</h2><table><thead><tr><th>Key</th><th>Name</th><th>Steps</th><th>Active</th></tr></thead><tbody>
+    ${js.map(j=>`<tr><td><code>${esc(j.key)}</code></td><td>${esc(j.name)}</td><td class="mut">${j.steps.map(s=>s.kind).join(' → ')}</td><td>${j.active?'✓':'—'}</td></tr>`).join('')||'<tr><td colspan="4" class="mut">None</td></tr>'}</tbody></table>
+    <h2>Instances (${is.length})</h2><table><thead><tr><th>Id</th><th>Status</th><th>Step</th><th>Deadline</th><th>History</th></tr></thead><tbody>
+    ${is.map(i=>`<tr><td><code>${i.id.slice(0,16)}…</code></td><td>${pill(i.status)}</td><td><code>${esc(i.currentStepId)}</code></td><td>${when(i.deadlineAt)}</td>
+    <td class="mut">${i.history.map(h=>esc(h.note)).join(' · ')}</td></tr>`).join('')||'<tr><td colspan="5" class="mut">None</td></tr>'}</tbody></table>
+    <p><button class="act ghost" onclick="api('/v1/journeys/tick',{method:'POST',body:'{}'}).then(()=>route('journeys'))">Run scheduler tick</button></p>`;
+  },
+  async print(){
+    const bs = await api('/v1/print-batches');
+    main.innerHTML=`<h2>Print batches</h2><table><thead><tr><th>Batch</th><th>Status</th><th>Pieces</th><th>Suppressed</th><th></th></tr></thead><tbody>
+    ${bs.map(b=>`<tr><td><code>${b.id.slice(0,16)}…</code><br><span class="mut">${when(b.createdAt)}</span></td><td>${pill(b.status)}</td>
+    <td>${b.pieceIds.length}</td><td>${b.suppressed.length?b.suppressed.map(s=>`<span class="err">${esc(s.reason)}</span>`).join(', '):'—'}</td>
+    <td><button class="act ghost" onclick="pieces('${b.id}')">Pieces</button> <button class="act ghost" onclick="api('/v1/print-batches/${b.id}/reconcile',{method:'POST',body:'{}'}).then(r=>{$('#detail').innerHTML='<pre>'+esc(JSON.stringify(r,null,2))+'</pre>'})">Reconcile</button></td></tr>`).join('')||'<tr><td colspan="5" class="mut">None</td></tr>'}</tbody></table><div id="detail"></div>`;
+  },
   async ingest(){
     main.innerHTML=`<h2>Batch ingestion</h2>
     <div class="row"><div>
@@ -165,12 +181,19 @@ window.ctl = async (id)=>{
   const t = await api(`/v1/customers/${id}/timeline`);
   $('#detail').innerHTML = `<h2>Customer timeline</h2><table><tbody>${t.map(e=>`<tr><td class="mut" style="white-space:nowrap">${when(e.at)}</td><td>${esc(e.summary)}</td></tr>`).join('')||'<tr><td class="mut">No events</td></tr>'}</tbody></table>`;
 };
+window.pieces = async (batchId)=>{
+  const ps = await api(`/v1/print-batches/${batchId}/pieces`);
+  $('#detail').innerHTML = `<h2>Pieces</h2><table><thead><tr><th>Piece</th><th>ZIP</th><th>IMB</th><th>Status</th><th>Advance</th></tr></thead><tbody>
+  ${ps.map(p=>`<tr><td><code>${p.id.slice(0,16)}…</code></td><td>${esc(p.postalCode)}</td><td class="mut">${esc(p.imb.slice(0,12))}…</td><td>${pill(p.status)}</td>
+  <td>${['printed','mailed','delivered','returned'].map(s=>`<button class="act ghost" onclick="api('/v1/print-pieces/${p.id}/events',{method:'POST',body:JSON.stringify({status:'${s}'})}).then(()=>pieces('${batchId}')).catch(e=>alert(e.message))">${s}</button>`).join(' ')}</td></tr>`).join('')}
+  </tbody></table>`;
+};
 window.evidence = async (id)=>{
   const p = await api(`/v1/archive/${id}/evidence-pack`);
   $('#detail').innerHTML = `<h2>Evidence pack — chain ${p.eventChain.intact?'intact ✓':'BROKEN ✗'}</h2><pre>${esc(JSON.stringify(p,null,2))}</pre>`;
 };
 
-const tabs = ['dashboard','communications','templates','content','customers','deliveries','archive','ingest'];
+const tabs = ['dashboard','communications','templates','content','customers','deliveries','journeys','print','archive','ingest'];
 let current='dashboard';
 $('#nav').innerHTML = tabs.map(t=>`<button data-t="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('');
 $('#nav').addEventListener('click',(e)=>{const t=e.target.dataset?.t;if(t)route(t);});
